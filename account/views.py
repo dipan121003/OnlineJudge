@@ -49,7 +49,7 @@ def login_user(request):
         login(request,user)
         messages.info(request,'login successful')
 
-        return redirect('/auth/register/')
+        return redirect('/problems/list/')
     
     template = loader.get_template('login.html')
     context ={}
