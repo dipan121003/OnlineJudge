@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}Problems – Online Judge{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+  <h1 class="text-center mb-5 fw-bold text-primary">💻 Problem List</h1>
+
+  <div class="row row-cols-1 row-cols-md-2 g-4">
+    {% for p in problems %}
+      <div class="col">
+        <div class="card shadow-sm h-100 border-start border-4 
+                    {% if p.difficulty == 'Easy' %}border-success
+                    {% elif p.difficulty == 'Medium' %}border-warning
+                    {% else %}border-danger{% endif %}">
+          <div class="card-body">
+            <h5 class="card-title text-dark">
+              {{ p.title }}
+            </h5>
+            <p class="card-text">
+              Difficulty: 
+              <span class="badge 
+                          {% if p.difficulty == 'Easy' %}bg-success
+                          {% elif p.difficulty == 'Medium' %}bg-warning text-dark
+                          {% else %}bg-danger{% endif %}">
+                {{ p.difficulty }}
+              </span>
+            </p>
+            <a href="{% url 'problem-detail' p.pk %}" class="btn btn-outline-primary btn-sm">
+              Solve Problem →
+            </a>
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <p class="text-muted text-center">No problems found. Please add some in admin panel.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
