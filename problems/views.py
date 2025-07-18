@@ -1,7 +1,5 @@
-# backend/home/views.py
 from django.shortcuts import render
 from .models import Problem
-from django.http import HttpResponse
 
 def problems_list(request):
     # Fetch all problems, ordered however you like
@@ -11,5 +9,12 @@ def problems_list(request):
     return render(request, 'problems.html', {
         'problems': problems
     })
-    
 
+def problem_detail(request, problem_id):
+    # Fetch a specific problem by its ID
+    problem = Problem.objects.get(id=problem_id)
+    
+    # Pass the problem into your template
+    return render(request, 'problem_detail.html', {
+        'problem': problem
+    })
