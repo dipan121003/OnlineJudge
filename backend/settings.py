@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'home',  # Custom app for the home page
     'account',  # Custom app for user account
     'problems',  # Custom app for problems listing and management
+    'submission',  # Custom app for handling submission
 ]
 
 MIDDLEWARE = [

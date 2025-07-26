@@ -17,4 +17,4 @@ def problem_detail(request, problem_id):
     # Pass the problem into your template
     return render(request, 'problem_detail.html', {
         'problem': problem
-    })
+    }) 
