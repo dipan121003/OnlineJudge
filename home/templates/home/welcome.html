@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+{% load static %}
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Dipan's Online Judge</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        body,
+        html {
+            height: 100%;
+            margin: 0;
+        }
+
+        .bg-container {
+            background-image: url("{% static 'images/background.png' %}");
+            background-position: center;
+            background-repeat: no-repeat;
+            background-size: cover;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .overlay {
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 50px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .shiny-text {
+            font-family: 'Poppins', sans-serif;
+            font-size: 4rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #4dd0e1, #81c784, #ba68c8, #4dd0e1);
+            background-size: 200% auto;
+            color: transparent;
+            -webkit-background-clip: text;
+            background-clip: text;
+            animation: shine 8s linear infinite;
+        }
+
+        @keyframes shine {
+            to {
+                background-position: 200% center;
+            }
+        }
+
+        /* This is the custom style for your main "View Problems" button */
+        .btn-custom-green {
+            background-image: linear-gradient(to right, #28a745, #218838);
+            border: none;
+            color: white;
+            box-shadow: 0 4px 15px 0 rgba(40, 167, 69, 0.5);
+            transition: all 0.3s ease-in-out;
+        }
+
+        .btn-custom-green:hover {
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px 0 rgba(40, 167, 69, 0.6);
+            background-position: 100% 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="bg-container">
+        <div class="overlay">
+
+            <h1 class="shiny-text mb-5">Welcome to Dipan's Online Judge</h1>
+
+            <div class="mt-4">
+                <a href="{% url 'login-user' %}" class="btn btn-outline-light btn-lg mx-2">Login</a>
+
+                <a href="{% url 'register-user' %}" class="btn btn-outline-info btn-lg mx-2">Register</a>
+
+                <a href="{% url 'problems-list' %}" class="btn btn-custom-green btn-lg mx-2">
+                    <i class="fas fa-list-ul"></i> View Problems
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

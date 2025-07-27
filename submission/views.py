@@ -7,6 +7,9 @@ import subprocess
 from pathlib import Path
 from .forms import CodeSubmissionForm
 from django.contrib.auth.decorators import login_required
+from problems.models import Problem
+from .models import CodeSubmission
+from django.shortcuts import get_object_or_404, redirect
 
 @login_required
 def submit_code(request):
@@ -30,6 +33,65 @@ def submit_code(request):
     else:
         form = CodeSubmissionForm()
     return render(request, "submission/result.html", {"form": form})
+
+@login_required
+def submit_solution(request, problem_id):
+    # Get the specific problem we are submitting a solution for
+    problem = get_object_or_404(Problem, id=problem_id)
+    
+    if request.method == 'POST':
+        # Create a form instance with the submitted data
+        form = CodeSubmissionForm(request.POST)
+        
+        if form.is_valid():
+            # Create a submission object in memory without saving to the database yet
+            submission = form.save(commit=False)
+            
+            # Add the user and problem to the submission object
+            submission.user = request.user
+            submission.problem = problem # Link the submission to the problem
+            
+            # Determine the final verdict by running against all official test cases
+            final_verdict = "Accepted" # Assume success initially
+            test_cases = problem.test_cases.all()
+
+            if not test_cases.exists():
+                final_verdict = "System Error: No Test Cases"
+            else:
+                for case in test_cases:
+                    # Use your existing run_code utility for each test case
+                    output = run_code(submission.language, submission.code, case.input_data)
+                    
+                    # Check for execution errors first
+                    if "Error" in output or "Timed Out" in output:
+                        final_verdict = output # Set verdict to the error message
+                        break # Stop checking other test cases
+
+                    # Check if the code's output matches the test case's expected output
+                    if output.strip() != case.output_data.strip():
+                        final_verdict = "Wrong Answer"
+                        break # Stop on the first wrong answer
+            
+            # Add the final verdict to our submission object
+            submission.verdict = final_verdict
+            
+            # Now, save the complete submission object to the database
+            # The UUID for the 'id' will be generated automatically here
+            submission.save()
+
+            # Redirect to the result page, passing the new submission's ID
+            return redirect('submission_result', submission_id=submission.id)
+
+    # If the request is not POST, just redirect back to the problem page
+    return redirect('problem_detail', problem_id=problem_id)
+
+
+# This view remains the same, but it now displays a CodeSubmission object
+@login_required
+def submission_result(request, submission_id):
+    # We fetch a CodeSubmission object instead of a Solution object
+    submission = get_object_or_404(CodeSubmission, id=submission_id)
+    return render(request, 'submission/solution_result.html', {'submission': submission})
 
 def run_code(language, code, input_data):
     # Your run_code function is great. Let's make a few small improvements.
