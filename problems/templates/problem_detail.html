@@ -1,41 +1,93 @@
 <!DOCTYPE html>
 
 <html lang="en">
-
+{% load static %}
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ problem.title }} – Online Judge</title>
-
-  <!-- Bootstrap CSS -->
-
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-
-  <!-- Ace Editor -->
-
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.43.2/ace.js"></script>
 
+  <style>
+    body {
+      background-image: url("{% static 'images/problems_background.png' %}");
+      background-size: cover;
+      background-attachment: fixed;
+      background-color: #0a192f;
+      /* A dark blue fallback color */
+    }
+
+    .card {
+      background-color: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #f0f0f0;
+      /* Light text for dark background */
+    }
+
+    .card-header,
+    .card-title,
+    .form-label {
+      color: white;
+    }
+
+    .text-muted {
+      color: #bdc3c7 !important;
+    }
+
+    .page-title {
+      color: white;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+    }
+
+    /* Style the Ace Editor to match the theme */
+    #code-editor {
+      border-radius: 4px;
+    }
+  </style>
 </head>
 
 <body class="bg-light">
 
-  <div class="container py-5">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-transparent mb-4">
+    <div class="container">
+      <a class="navbar-brand fw-bold" href="/">Online Judge</a>
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav ms-auto">
+          {% if request.user.is_authenticated %}
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'problems-list' %}">Problems</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'logout-user' %}">Logout</a>
+          </li>
+          {% else %}
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'login-user' %}">Login</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'register-user' %}">Register</a>
+          </li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+  </nav>
 
-    <!-- Problem Header -->
+  <div class="container py-5">
     <div class="mb-4">
-      <h1 class="display-5 fw-bold">{{ problem.title }}</h1>
+      <h1 class="display-5 fw-bold page-title">{{ problem.title }}</h1>
       <p class="text-muted">
-        Created: {{ problem.created_at|date:"F d, Y" }} |
         Difficulty:
         <span
           class="badge {% if problem.difficulty == 'Easy' %}bg-success{% elif problem.difficulty == 'Medium' %}bg-warning text-dark{% else %}bg-danger{% endif %}">
           {{ problem.difficulty }}
         </span>
       </p>
-      <hr>
+      <hr style="color: #f0f0f0;">
     </div>
 
-    <!-- Problem Description -->
     <div class="card mb-5">
       <div class="card-body">
         <h5 class="card-title">Problem Description</h5>
@@ -53,25 +105,19 @@
           <div class="col-md-4">
             <label for="language" class="form-label">Language</label>
             <select id="language" class="form-select">
-              <option value="py">Python</option>
-              <option value="cpp">C++</option>
-              <option value="java">Java</option>
+              <option value="py" {% if submitted_language == 'py' %}selected{% endif %}>Python</option>
+              <option value="cpp" {% if submitted_language == 'cpp' %}selected{% endif %}>C++</option>
+              <option value="java" {% if submitted_language == 'java' %}selected{% endif %}>Java</option>
             </select>
           </div>
         </div>
+        <div id="code-editor" style="height:400px; width:100%;"></div>
 
-        <div class="mb-3">
-          <label for="code-editor" class="form-label">Your Code</label>
-          <div id="code-editor" style="height:400px; width:100%; border:1px solid #ccc; border-radius:4px;"></div>
-        </div>
-
-        <form method="post" action="{% url 'run_code' %}" id="run-form">
+        <form method="post" action="{% url 'run_code' %}" id="run-form" class="mt-3">
           {% csrf_token %}
           <input type="hidden" name="problem" value="{{ problem.id }}">
-
           <label for="display-input" class="form-label">Custom Input</label>
           <textarea id="display-input" name="input_data" class="form-control font-monospace" rows="4"></textarea>
-
           <textarea name="code" class="hidden-code" hidden></textarea>
           <input type="hidden" name="language" class="hidden-language">
         </form>
@@ -82,9 +128,20 @@
           <input type="hidden" name="language" class="hidden-language">
         </form>
 
+        <form method="post" action="{% url 'get_ai_suggestion' problem.id %}" id="ai-form" class="mt-4 border-top pt-3"
+          style="border-color: rgba(255,255,255,0.2) !important;">
+          {% csrf_token %}
+          <label for="user-question" class="form-label fw-bold">Ask AI for a Hint</label>
+          <textarea id="user-question" name="user_question" class="form-control" rows="2"
+            placeholder="e.g., 'Is my logic correct?' or 'How can I optimize this?'"></textarea>
+          <textarea name="code" class="hidden-code" hidden></textarea>
+          <input type="hidden" name="language" class="hidden-language">
+        </form>
+
         <div class="d-flex gap-2 mt-3">
           <button type="submit" form="run-form" class="btn btn-secondary">Run Code</button>
           <button type="submit" form="submit-form" class="btn btn-primary">Submit Solution</button>
+          <button type="submit" form="ai-form" class="btn btn-info">Get AI Suggestion</button>
         </div>
       </div>
     </div>
@@ -95,8 +152,16 @@
 
   <script>
     const editor = ace.edit("code-editor");
+    const languageDropdown = document.getElementById('language');
+    const runForm = document.getElementById('run-form');
+    const submitForm = document.getElementById('submit-form');
+    const aiForm = document.getElementById('ai-form');
+    const allHiddenCodeInputs = document.querySelectorAll('.hidden-code');
+    const allHiddenLanguageInputs = document.querySelectorAll('.hidden-language');
+
+    // --- Editor and Form Setup ---
+
     editor.setOptions({
-      mode: 'ace/mode/python', // MODIFICATION: Default to 'py' to match the dropdown
       theme: 'ace/theme/monokai',
       fontSize: '14pt',
       showPrintMargin: false,
@@ -105,17 +170,24 @@
       highlightActiveLine: true,
       readOnly: false
     });
-    editor.session.setValue('');
+
+    // This correctly populates the editor with code when you navigate back
+    editor.session.setValue(`{{ submitted_code|escapejs }}`);
     editor.focus();
 
-    // MODIFICATION: Get references to both forms and all hidden fields
-    const runForm = document.getElementById('run-form');
-    const submitForm = document.getElementById('submit-form');
-    const allHiddenCodeInputs = document.querySelectorAll('.hidden-code');
-    const allHiddenLanguageInputs = document.querySelectorAll('.hidden-language');
-    const languageDropdown = document.getElementById('language');
+    // --- Reusable Functions ---
 
-    // MODIFICATION: A single function to update hidden fields in both forms
+    // MODIFICATION: Created a single function to set the editor's mode
+    function setEditorMode() {
+      const lang = languageDropdown.value;
+      let mode = 'ace/mode/text';
+      if (lang === 'py') mode = 'ace/mode/python';
+      else if (lang === 'cpp') mode = 'ace/mode/c_cpp';
+      else if (lang === 'java') mode = 'ace/mode/java';
+      editor.session.setMode(mode);
+    }
+
+    // This function correctly updates hidden fields before submission
     function updateHiddenFields() {
       const code = editor.getValue();
       const lang = languageDropdown.value;
@@ -129,19 +201,18 @@
       });
     }
 
-    // MODIFICATION: Add event listeners to both forms
+    // --- Event Listeners and Initial Calls ---
+
+    // MODIFICATION: Call this function once on page load to set the initial mode
+    setEditorMode();
+
+    // This listener updates the mode when the user manually changes the dropdown
+    languageDropdown.addEventListener('change', setEditorMode);
+
+    // These listeners handle all your form submissions
     runForm.addEventListener('submit', updateHiddenFields);
     submitForm.addEventListener('submit', updateHiddenFields);
-
-    // Switch language mode dynamically (this part remains the same)
-    languageDropdown.addEventListener('change', function () {
-      const lang = this.value;
-      let mode = 'ace/mode/text';
-      if (lang === 'py') mode = 'ace/mode/python';
-      else if (lang === 'cpp') mode = 'ace/mode/c_cpp';
-      else if (lang === 'java') mode = 'ace/mode/java';
-      editor.session.setMode(mode);
-    });
+    aiForm.addEventListener('submit', updateHiddenFields);
   </script>
 
 </body>

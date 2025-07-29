@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  web:
+    # Build the image from the Dockerfile in the current directory
+    build: .
+    # Command to run the Django development server
+    command: python manage.py runserver 0.0.0.0:8000
+    # Mount the current directory on the host to /app in the container
+    # This allows for live-reloading when you change your code.
+    volumes:
+      - .:/app
+    # Map port 8000 on your host machine to port 8000 in the container
+    ports:
+      - "8000:8000"

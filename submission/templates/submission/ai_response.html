@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+{% load static %}
+{% load markdown_filter %}
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Suggestion for {{ problem.title }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            background-image: url("{% static 'images/problems_background.png' %}");
+            background-size: cover;
+            background-attachment: fixed;
+            background-color: #0a192f; /* A dark blue fallback color */
+        }
+        .card, .accordion-item {
+            background-color: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #f0f0f0; /* Light text for dark background */
+        }
+        .accordion-button {
+            background-color: transparent;
+            color: white;
+        }
+        .accordion-button:not(.collapsed) {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+        .accordion-button:focus {
+            box-shadow: none;
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        .accordion-button::after {
+            filter: invert(1) grayscale(100%);
+        }
+        .card-header, .card-title, .form-label, strong {
+            color: white;
+        }
+        .page-title {
+            color: white;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+        }
+        .text-muted {
+            color: #bdc3c7 !important;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-transparent mb-4">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/">Online Judge</a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav ms-auto">
+                    {% if request.user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'problems-list' %}">Problems</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'logout-user' %}">Logout</a>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'login-user' %}">Login</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'register-user' %}">Register</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-5">
+        <h1 class="display-5 mb-4 page-title">AI Tutor Suggestion</h1>
+        <h2 class="h4 text-muted mb-4">For problem: {{ problem.title }}</h2>
+
+        <div class="card">
+            <div class="card-header fw-bold">
+                Here's a hint to guide you...
+            </div>
+            <div class="card-body">
+                {{ ai_response|markdown }}
+            </div>
+        </div>
+
+        <div class="accordion mt-4" id="contextAccordion">
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingOne">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                        Show My Original Code & Question
+                    </button>
+                </h2>
+                <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne"
+                    data-bs-parent="#contextAccordion">
+                    <div class="accordion-body">
+                        <strong>Your Question:</strong>
+                        <p class="text-muted">{{ user_question }}</p>
+                        <hr style="color: rgba(255, 255, 255, 0.3);">
+                        <strong>Your Code:</strong>
+                        <pre><code class="text-light">{{ user_code }}</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <form action="{% url 'problem-detail' problem.id %}" method="POST" class="mt-4">
+            {% csrf_token %}
+            <input type="hidden" name="code" value="{{ user_code|escape }}">
+            <input type="hidden" name="language" value="{{ language }}">
+            <button type="submit" class="btn btn-primary">Back to Problem</button>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -10,6 +10,8 @@ from django.contrib.auth.decorators import login_required
 from problems.models import Problem
 from .models import CodeSubmission
 from django.shortcuts import get_object_or_404, redirect
+import google.generativeai as genai
+from dotenv import load_dotenv
 
 @login_required
 def submit_code(request):
@@ -149,3 +151,81 @@ def run_code(language, code, input_data):
         output_data = f"An unexpected error occurred: {str(e)}"
 
     return output_data
+
+@login_required
+def get_ai_suggestion(request, problem_id):
+    # --- 1. SETUP ---
+    problem = get_object_or_404(Problem, id=problem_id)
+    language = request.POST.get('language', 'py')
+    
+    # Load the API key from your .env file
+    load_dotenv()
+    api_key = os.getenv('GOOGLE_API_KEY')
+    if not api_key:
+        # Handle the error case where the API key is not found
+        return render(request, 'submission/ai_response.html', {'error': 'API Key not configured.'})
+    
+    genai.configure(api_key=api_key)
+
+    # --- 2. GET DATA FROM FORM ---
+    user_code = request.POST.get('code', '')
+    user_question = request.POST.get('user_question', '')
+    
+    # --- 3. DEFINE THE GUIDING PROMPT ---
+    # This is the improved prompt we created earlier
+    system_prompt = """
+    You are an expert AI Coding Tutor for an Online Judge platform. Your personality is encouraging, helpful, and Socratic. Your primary goal is to guide users to the optimal solution themselves, not to give it away.
+
+    **Your Task:**
+    Analyze the user's code for a given problem and respond to their specific question. Guide them step-by-step towards the most optimal solution in terms of time and space complexity.
+
+    **Strict Rules:**
+    1. NEVER give away the final solution code. Do not write full, correct solutions. You can provide small snippets to illustrate a concept, but never the complete answer.
+    2. NEVER reveal spoilers or talk about parts of the problem the user hasn't reached yet.
+    3. Adhere to the user's progress. Base your guidance strictly on the code and question provided.
+    4. If the user asks for the direct solution, gently refuse and reiterate your role as a tutor who helps them think.
+    5. Structure your response using markdown for clarity. Use bold text for key terms and code blocks for any small examples.
+
+    **Guidance Scenarios:**
+    * If the user has written no code: Help them understand the problem. Ask clarifying questions to break it down.
+    * If the user has a brute-force solution: Acknowledge their success first, then gently introduce the concept of optimization.
+    * If the user's code has errors: Identify the likely logical error without fixing it directly. Ask a question that leads them to the mistake.
+    * If the user has an optimal solution: Congratulate them. Only at this stage, you can show them their own code back but with best practices applied, commenting on the changes.
+    """
+
+    # --- 4. CONSTRUCT THE FINAL PROMPT FOR THE AI ---
+    final_prompt = f"""
+    {system_prompt}
+
+    ---
+    **Problem Statement:**
+    {problem.description}
+
+    ---
+    **User's Code:**
+    ```
+    {user_code}
+    ```
+
+    ---
+    **User's Question:**
+    "{user_question}"
+    """
+    
+    # --- 5. CALL THE API AND RENDER THE RESPONSE ---
+    try:
+        model = genai.GenerativeModel('gemini-1.5-flash-latest')
+        response = model.generate_content(final_prompt)
+        ai_response = response.text
+    except Exception as e:
+        ai_response = f"An error occurred while communicating with the AI model: {e}"
+
+    context = {
+        'problem': problem,
+        'user_code': user_code,
+        'user_question': user_question,
+        'ai_response': ai_response,
+        'language': language,
+    }
+
+    return render(request, 'submission/ai_response.html', context)

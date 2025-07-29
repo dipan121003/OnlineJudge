@@ -1,0 +1,20 @@
+# Folders for code execution files
+codes/
+inputs/
+outputs/
+
+# Django database file
+db.sqlite3
+
+# Python virtual environment folder (yours is named OJenv)
+OJenv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Production static files (if you use collectstatic)
+staticfiles/
+
+# ... other entries
+.env

@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from .models import Problem
 from django.contrib.auth.decorators import login_required
 
@@ -13,10 +13,17 @@ def problems_list(request):
 
 @login_required
 def problem_detail(request, problem_id):
-    # Fetch a specific problem by its ID
-    problem = Problem.objects.get(id=problem_id)
+    problem = get_object_or_404(Problem, id=problem_id)
     
-    # Pass the problem into your template
-    return render(request, 'problem_detail.html', {
-        'problem': problem
-    }) 
+    submitted_code = ''
+    submitted_language = 'py' 
+    if request.method == 'POST':
+        submitted_code = request.POST.get('code', '')
+        submitted_language = request.POST.get('language', 'py')
+
+    context = {
+        'problem': problem,
+        'submitted_code': submitted_code,
+        'submitted_language': submitted_language,
+    }
+    return render(request, 'problem_detail.html', context)

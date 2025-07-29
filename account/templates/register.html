@@ -1,72 +1,66 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+<head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link
-      href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
-    <title>Registration Form</title>
-  </head>
-  <body>
-    <div class="container mt-5">
-      <!-- Registration form -->
-      <form
-        class="col-6 mx-auto card p-3 shadow-lg"
-        method="post"
-        enctype="multipart/form-data"
-      >
-        {% csrf_token %}
-        <!-- CSRF token for security -->
+    <title>Register - Online Judge</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
 
-        <!-- Registration form heading -->
-        <h1 style="text-align: center">
-          <span style="color: green">Mysite</span>
-        </h1>
-        <h3>Register</h3>
-        <hr />
+    <style>
+        body, html {
+            height: 100%;
+        }
+        body {
+            /* A clean, light gray background */
+            background-color: #f4f7f9;
+        }
+        .form-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+        }
+        .auth-box {
+            width: 100%;
+            max-width: 450px;
+            /* A solid white background for the form */
+            background-color: #ffffff;
+            padding: 40px;
+            /* Smoother corners */
+            border-radius: 15px;
+            /* Custom dark bluish shadow */
+            box-shadow: 0 10px 30px rgba(30, 80, 200, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container form-container">
+        <form class="auth-box" method="post">
+            {% csrf_token %}
 
-        <!-- Display error/success messages -->
-        {% if messages %}
-        <div class="alert alert-primary" role="alert">
-          {% for message in messages %} {{ message }} {% endfor %}
-        </div>
-        {% endif %}
+            <h3 class="text-center mb-4">Register</h3>
+            <hr class="mb-4" />
 
-        <!-- Username input field -->
-        <div class="form-group">
-          <label for="exampleInputEmail1">Username</label>
-          <input
-            type="text"
-            class="form-control"
-            name="username"
-            id="exampleInputEmail1"
-            aria-describedby="emailHelp"
-            placeholder="Enter username"
-            required
-          />
-        </div>
+            {% if messages %}
+            <div class="alert alert-info" role="alert">
+                {% for message in messages %} {{ message }} {% endfor %}
+            </div>
+            {% endif %}
 
-        <!-- Password input field -->
-        <div class="form-group">
-          <label for="exampleInputPassword1">Password</label>
-          <input
-            type="password"
-            class="form-control"
-            name="password"
-            id="exampleInputPassword1"
-            placeholder="Password"
-            required
-          />
-        </div>
+            <div class="mb-3">
+                <label for="username" class="form-label">Username</label>
+                <input type="text" class="form-control" name="username" id="username" placeholder="Enter username" required />
+            </div>
 
-        <!-- Link to login page for users who already have an account -->
-        <p>Already have an account <a href="/auth/login/">Login</a></p>
+            <div class="mb-3">
+                <label for="password" class="form-label">Password</label>
+                <input type="password" name="password" class="form-control" id="password" placeholder="Password" required />
+            </div>
 
-        <!-- Submit button -->
-        <button type="submit" class="btn btn-primary">Submit</button>
-      </form>
+            <p class="text-center mt-3">Already have an account? <a href="{% url 'login-user' %}">Login</a></p>
+
+            <button type="submit" class="btn btn-primary w-100 mt-3">Submit</button>
+        </form>
     </div>
-  </body>
+</body>
 </html>

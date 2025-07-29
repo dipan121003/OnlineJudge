@@ -1,0 +1,12 @@
+# Git folder
+.git/
+
+# Virtual environment
+OJenv/
+
+# Python cache
+__pycache__/
+
+# Docker files
+Dockerfile
+docker-compose.yml

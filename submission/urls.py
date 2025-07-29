@@ -10,4 +10,7 @@ urlpatterns = [
     
     # URL for displaying the final solution result
     path('result/<uuid:submission_id>/', views.submission_result, name='submission_result'),
+    
+    #URL for handling AI suggestions
+    path('ai/suggest/<int:problem_id>/', views.get_ai_suggestion, name='get_ai_suggestion'),
 ]
