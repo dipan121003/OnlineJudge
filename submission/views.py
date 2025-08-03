@@ -30,8 +30,14 @@ def submit_code(request):
 
             submission.output_data = output
             submission.save() # Now save the complete object
+            
+            problem = submission.problem 
+            context = {
+                "submission": submission,
+                "problem": problem, # Add the problem to the context
+            }
 
-            return render(request, "submission/result.html", {"submission": submission})
+            return render(request, "submission/result.html", context)
     else:
         form = CodeSubmissionForm()
     return render(request, "submission/result.html", {"form": form})

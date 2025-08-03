@@ -26,7 +26,10 @@ SECRET_KEY = 'django-insecure-@twh@#jr$h2b=+&d%u+mi3om58d&f30k2&$-$c_04xv!%nhy0t
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['13.49.76.151']
+ALLOWED_HOSTS = [
+    '13.49.76.151',
+    '127.0.0.1',
+    ]
 
 
 # Application definition
@@ -42,6 +45,7 @@ INSTALLED_APPS = [
     'account',  # Custom app for user account
     'problems',  # Custom app for problems listing and management
     'submission',  # Custom app for handling submission
+    'user_profile',  # Custom app for user profiles
 ]
 
 MIDDLEWARE = [
@@ -120,6 +124,15 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+
+# The URL where requests are redirected for login
+LOGIN_URL = '/auth/login/'
+
+# The base URL to serve media files
+MEDIA_URL = '/media/'
+
+# The absolute path to the folder where media files will be stored
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # This tells Django where to find static files in your project during development
 STATICFILES_DIRS = [

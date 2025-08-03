@@ -25,7 +25,9 @@ urlpatterns = [
     path('auth/', include('account.urls')),  # Include URLs from the account app
     path('problems/', include('problems.urls')),  # Include URLs from the problems
     path('submit/', include('submission.urls')),  # Include URLs from the submission app
+    path('profile/', include('user_profile.urls')),  # Include URLs from the user_profile app
 ]
 
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

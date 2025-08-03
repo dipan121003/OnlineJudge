@@ -1,14 +1,66 @@
 <!DOCTYPE html>
 <html lang="en">
+{% load static %}
 <head>
     <meta charset="UTF-8">
     <title>Execution Result</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            background-image: url("{% static 'images/problems_background.png' %}");
+            background-size: cover;
+            background-attachment: fixed;
+            background-color: #0a192f; /* A dark blue fallback color */
+        }
+        .card {
+            background-color: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .card-header {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .card-body {
+            color: #f0f0f0;
+        }
+        .page-title {
+            color: white;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+        }
+    </style>
 </head>
-<body class="bg-light">
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-transparent mb-4">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/">Online Judge</a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav ms-auto">
+                    {% if request.user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'problems-list' %}">Problems</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'logout-user' %}">Logout</a>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'login-user' %}">Login</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'register-user' %}">Register</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
 
 <div class="container py-5">
-    <h1 class="mb-4">Execution Result</h1>
+    <h1 class="mb-4 page-title">Execution Result</h1>
 
     <div class="card mt-4">
         <div class="card-header">Your Code</div>
@@ -31,7 +83,13 @@
         </div>
     </div>
 
-    <a href="javascript:history.back()" class="btn btn-primary mt-4">Go Back</a>
+    <form action="{% url 'problem-detail' problem.id %}" method="POST" class="mt-4">
+        {% csrf_token %}
+        <input type="hidden" name="code" value="{{ submission.code|escape }}">
+        <input type="hidden" name="language" value="{{ submission.language }}">
+        <input type="hidden" name="input_data" value="{{ submission.input_data|escape }}">
+        <button type="submit" class="btn btn-primary">Go Back</button>
+    </form>
 </div>
 
 </body>

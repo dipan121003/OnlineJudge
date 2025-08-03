@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+{% load static %}
+
+<head>
+    <meta charset="UTF-8">
+    <title>{{ profile.user.username }}'s Profile</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            background-image: url("{% static 'images/problems_background.png' %}");
+            background-size: cover;
+            background-attachment: fixed;
+            background-color: #0a192f;
+            /* A dark blue fallback color */
+            color: #f0f0f0;
+            /* Set default text color to light */
+        }
+
+        .card {
+            background-color: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .page-title {
+            color: white;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+        }
+
+        .text-muted {
+            color: #bdc3c7 !important;
+        }
+
+        .table {
+            --bs-table-bg: transparent;
+            --bs-table-border-color: rgba(255, 255, 255, 0.2);
+            --bs-table-color: #f0f0f0;
+        }
+
+        .day-cell {
+            height: 50px;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .day-cell:hover {
+            transform: scale(1.1);
+            border: 1px solid white !important;
+        }
+
+        .day-number {
+            font-size: 0.8em;
+        }
+
+        .other-month {
+            color: #6c757d;
+        }
+
+        .calendar {
+            --cal-bg: rgba(255, 255, 255, 0.1);
+            --cal-border: rgba(255, 255, 255, 0.2);
+            --cal-text: #f0f0f0;
+            --cal-day-bg-low: rgba(3, 166, 60, 0.2);
+            --cal-day-bg-med: rgba(3, 166, 60, 0.5);
+            --cal-day-bg-high: rgba(3, 166, 60, 0.8);
+            --cal-other-month-text: #6c757d;
+
+            background-color: var(--cal-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--cal-border);
+            border-radius: 0.5rem;
+            padding: 1rem; /* MODIFICATION: Reduced padding */
+            max-width: 600px; /* MODIFICATION: Added a max-width */
+            margin-left: auto; /* Center the calendar */
+            margin-right: auto; /* Center the calendar */
+        }
+        .calendar-header {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 0.25rem; /* MODIFICATION: Reduced the gap between days */
+        }
+        .calendar-day-name, .calendar-day {
+            text-align: center;
+            padding: 0.25rem; /* MODIFICATION: Reduced padding */
+        }
+        .calendar-day-name {
+            font-weight: bold;
+            font-size: 0.8em; /* MODIFICATION: Made day names slightly smaller */
+            color: var(--cal-text);
+        }
+        .calendar-day {
+            background-color: rgba(0,0,0,0.2);
+            border-radius: 0.25rem;
+            color: var(--cal-text);
+            transition: transform 0.2s ease;
+        }
+        .calendar-day:hover {
+            transform: scale(1.1);
+        }
+        .other-month {
+            color: var(--cal-other-month-text);
+        }
+        .calendar-day.has-submissions-low {
+            background-color: var(--cal-day-bg-low);
+        }
+        .calendar-day.has-submissions-med {
+            background-color: var(--cal-day-bg-med);
+        }
+        .calendar-day.has-submissions-high {
+            background-color: var(--cal-day-bg-high);
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-transparent mb-4">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/">Online Judge</a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav ms-auto">
+                    {% if request.user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'problems-list' %}">Problems</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'profile_view' request.user.username %}">Profile</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'logout-user' %}">Logout</a>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'login-user' %}">Login</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'register-user' %}">Register</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-5">
+        <div class="d-flex align-items-center mb-5">
+            {% if profile.profile_picture %}
+                <img src="{{ profile.profile_picture.url }}" class="rounded-circle" width="100" height="100" alt="Profile Picture" style="border: 2px solid rgba(255,255,255,0.5);">
+            {% else %}
+                <img src="{% static 'images/default_avatar.png' %}" class="rounded-circle" width="100" height="100" alt="Profile Picture" style="border: 2px solid rgba(255,255,255,0.5);">
+            {% endif %}
+            
+            <div class="ms-4">
+                <h1 class="display-5 page-title">{{ profile.user.username }}</h1>
+                <p class="text-muted">Member since {{ profile.user.date_joined|date:"F Y" }}</p>
+            </div>
+        </div>
+
+        <div class="row text-center mb-5">
+            <div class="col-md-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title" style="color: #198754;">Easy</h5>
+                        <p class="card-text fs-2 fw-bold">{{ profile.solved_easy }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title" style="color: #ffc107;">Medium</h5>
+                        <p class="card-text fs-2 fw-bold">{{ profile.solved_medium }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title" style="color: #dc3545;">Hard</h5>
+                        <p class="card-text fs-2 fw-bold">{{ profile.solved_hard }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="calendar mt-5">
+        <div class="calendar-header">
+            <h3 class="page-title">{{ month_name }} {{ year }} Activity</h3>
+        </div>
+        <div class="calendar-grid">
+            <div class="calendar-day-name">Mon</div>
+            <div class="calendar-day-name">Tue</div>
+            <div class="calendar-day-name">Wed</div>
+            <div class="calendar-day-name">Thu</div>
+            <div class="calendar-day-name">Fri</div>
+            <div class="calendar-day-name">Sat</div>
+            <div class="calendar-day-name">Sun</div>
+
+            {% for week in calendar %}
+                {% for day in week %}   
+                    <div class="calendar-day 
+                        {% if day.count >= 5 %}has-submissions-high
+                        {% elif day.count >= 3 %}has-submissions-med
+                        {% elif day.count > 0 %}has-submissions-low
+                        {% endif %}
+                        {% if not day.is_current_month %}other-month{% endif %}"
+                        title="{{ day.count }} submissions on {{ day.date|date:'M d' }}">
+                        {{ day.date.day }}
+                    </div>
+                {% endfor %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+
+</html>

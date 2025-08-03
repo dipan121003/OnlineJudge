@@ -17,13 +17,16 @@ def problem_detail(request, problem_id):
     
     submitted_code = ''
     submitted_language = 'py' 
+    submitted_input = ''
     if request.method == 'POST':
         submitted_code = request.POST.get('code', '')
         submitted_language = request.POST.get('language', 'py')
+        submitted_input = request.POST.get('input_data', '')
 
     context = {
         'problem': problem,
         'submitted_code': submitted_code,
         'submitted_language': submitted_language,
+        'submitted_input': submitted_input,
     }
     return render(request, 'problem_detail.html', context)

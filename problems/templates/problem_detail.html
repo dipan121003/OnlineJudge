@@ -55,21 +55,23 @@
       <a class="navbar-brand fw-bold" href="/">Online Judge</a>
       <div class="collapse navbar-collapse">
         <ul class="navbar-nav ms-auto">
-          {% if request.user.is_authenticated %}
-          <li class="nav-item">
-            <a class="nav-link" href="{% url 'problems-list' %}">Problems</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="{% url 'logout-user' %}">Logout</a>
-          </li>
-          {% else %}
-          <li class="nav-item">
-            <a class="nav-link" href="{% url 'login-user' %}">Login</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="{% url 'register-user' %}">Register</a>
-          </li>
-          {% endif %}
+            {% if request.user.is_authenticated %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'profile_view' request.user.username %}">
+                        Profile
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'logout-user' %}">Logout</a>
+                </li>
+            {% else %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'login-user' %}">Login</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'register-user' %}">Register</a>
+                </li>
+            {% endif %}
         </ul>
       </div>
     </div>
@@ -117,7 +119,7 @@
           {% csrf_token %}
           <input type="hidden" name="problem" value="{{ problem.id }}">
           <label for="display-input" class="form-label">Custom Input</label>
-          <textarea id="display-input" name="input_data" class="form-control font-monospace" rows="4"></textarea>
+          <textarea id="display-input" name="input_data" class="form-control font-monospace" rows="4">{{ submitted_input }}</textarea>
           <textarea name="code" class="hidden-code" hidden></textarea>
           <input type="hidden" name="language" class="hidden-language">
         </form>
