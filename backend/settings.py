@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -19,6 +20,27 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
+
+# Load environment variables from a .env file
+load_dotenv()
+
+# ...
+
+# SECURITY WARNING: keep the secret key used in production secret!
+# Use the environment variable, or your local key as a default
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-@twh@#jr$h2b=+&d%u+mi3om58d&f30k2&$-$c_04xv!%nhy0t')
+
+# SECURITY WARNING: don't run with debug turned on in production!
+# Use the environment variable, default to True for local dev
+DEBUG = os.getenv('DJANGO_DEBUG', 'True') == 'True'
+
+# Use the environment variable, split by comma
+ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
+
+CSRF_TRUSTED_ORIGINS = os.getenv('DJANGO_CSRF_TRUSTED_ORIGINS', 'http://127.0.0.1:8000,http://localhost:8000').split(',')
+
+# ...
+
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-@twh@#jr$h2b=+&d%u+mi3om58d&f30k2&$-$c_04xv!%nhy0t'
