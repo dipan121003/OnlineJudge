@@ -13,4 +13,7 @@ urlpatterns = [
     
     #URL for handling AI suggestions
     path('ai/suggest/<int:problem_id>/', views.get_ai_suggestion, name='get_ai_suggestion'),
+    
+    #URL for submission list page
+    path('problem/<int:problem_id>/my-submissions/', views.submission_list, name='submission_list'),
 ]

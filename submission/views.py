@@ -138,6 +138,19 @@ def run_code(language, code, input_data):
         if compile_process.returncode != 0:
             return f"Compilation Error:\n{compile_process.stderr}"
         command = [str(executable_path)]
+    elif language == "java":
+        code_file_path = codes_dir / "Main.java"
+        code_file_path.write_text(code)
+
+        compile_process = subprocess.run(
+            ["javac", str(code_file_path)],
+            capture_output=True, text=True
+        )
+        if compile_process.returncode != 0:
+            return f"Compilation Error:\n{compile_process.stderr}"
+
+        command = ["java", "-cp", str(codes_dir), "Main"]
+
 
     # Execute the code
     try:
@@ -235,3 +248,23 @@ def get_ai_suggestion(request, problem_id):
     }
 
     return render(request, 'submission/ai_response.html', context)
+
+def submission_list(request, problem_id):
+    # Get the specific problem object
+    problem = get_object_or_404(Problem, id=problem_id)
+    
+    # Filter submissions to find ones that match:
+    # 1. The current logged-in user
+    # 2. The specific problem
+    # Order them by the most recent submission first
+    submissions = CodeSubmission.objects.filter(
+        user=request.user, 
+        problem=problem
+    ).order_by('-timestamp')
+    
+    context = {
+        'problem': problem,
+        'submissions': submissions,
+    }
+    
+    return render(request, 'submission/submission_list.html', context)

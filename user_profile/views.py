@@ -1,8 +1,9 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 import calendar
 from django.utils import timezone
+from .forms import ProfilePictureForm
 
 @login_required
 def profile_view(request, username):
@@ -44,3 +45,23 @@ def profile_view(request, username):
     }
     
     return render(request, 'user_profile/profile.html', context)
+
+def edit_profile(request, username):
+    user = get_object_or_404(User, username=username)
+    # Ensure the logged-in user can only edit their own profile
+    if request.user != user:
+        return redirect('profile_view', username=request.user.username)
+
+    if request.method == 'POST':
+        # Pass request.POST and request.FILES to the form
+        form = ProfilePictureForm(request.POST, request.FILES, instance=user.userprofile)
+        if form.is_valid():
+            form.save()
+            return redirect('profile_view', username=user.username)
+    else:
+        form = ProfilePictureForm(instance=user.userprofile)
+
+    context = {
+        'form': form
+    }
+    return render(request, 'user_profile/edit_profile.html', context)

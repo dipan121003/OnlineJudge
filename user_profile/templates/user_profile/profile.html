@@ -122,7 +122,13 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-transparent mb-4">
         <div class="container">
             <a class="navbar-brand fw-bold" href="/">Online Judge</a>
-            <div class="collapse navbar-collapse">
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     {% if request.user.is_authenticated %}
                     <li class="nav-item">
@@ -158,6 +164,7 @@
             <div class="ms-4">
                 <h1 class="display-5 page-title">{{ profile.user.username }}</h1>
                 <p class="text-muted">Member since {{ profile.user.date_joined|date:"F Y" }}</p>
+                <a href="{% url 'edit_profile' profile.user.username %}" class="btn btn-outline-light btn-sm">Edit Profile</a>
             </div>
         </div>
 
