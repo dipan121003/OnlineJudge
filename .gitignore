@@ -19,3 +19,4 @@ staticfiles/
 # ... other entries
 .env
 check_models.py
+media/
