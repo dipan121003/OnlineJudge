@@ -5,6 +5,7 @@ certifi==2025.7.14
 charset-normalizer==3.4.2
 colorama==0.4.6
 Django==5.2.4
+docker==7.1.0
 google-ai-generativelanguage==0.6.15
 google-api-core==2.25.1
 google-api-python-client==2.177.0
@@ -28,6 +29,7 @@ pydantic==2.11.7
 pydantic_core==2.33.2
 pyparsing==3.2.3
 python-dotenv==1.1.1
+pywin32==311
 requests==2.32.4
 rsa==4.9.1
 sqlparse==0.5.3

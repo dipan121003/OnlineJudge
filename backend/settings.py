@@ -41,7 +41,6 @@ CSRF_TRUSTED_ORIGINS = os.getenv('DJANGO_CSRF_TRUSTED_ORIGINS', 'http://127.0.0.
 
 # ...
 
-
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-@twh@#jr$h2b=+&d%u+mi3om58d&f30k2&$-$c_04xv!%nhy0t'
 

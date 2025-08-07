@@ -12,6 +12,8 @@ from .models import CodeSubmission
 from django.shortcuts import get_object_or_404, redirect
 import google.generativeai as genai
 from dotenv import load_dotenv
+import docker
+import tempfile
 
 @login_required
 def submit_code(request):
@@ -68,7 +70,7 @@ def submit_solution(request, problem_id):
             else:
                 for case in test_cases:
                     # Use your existing run_code utility for each test case
-                    output = run_code(submission.language, submission.code, case.input_data)
+                    output = run_code(submission.language, submission.code, case.input_data, problem.memory_limit)
                     
                     # Check for execution errors first
                     if "Error" in output or "Timed Out" in output:
@@ -101,73 +103,77 @@ def submission_result(request, submission_id):
     submission = get_object_or_404(CodeSubmission, id=submission_id)
     return render(request, 'submission/solution_result.html', {'submission': submission})
 
-def run_code(language, code, input_data):
-    # Your run_code function is great. Let's make a few small improvements.
-    project_path = Path(settings.BASE_DIR)
-    directories = ["codes", "inputs", "outputs"]
-
-    for directory in directories:
-        (project_path / directory).mkdir(parents=True, exist_ok=True)
-
-    codes_dir = project_path / "codes"
-    inputs_dir = project_path / "inputs"
-    outputs_dir = project_path / "outputs"
-
-    unique = str(uuid.uuid4())
-
-    # Define file paths
-    code_file_path = codes_dir / f"{unique}.{language}"
-    input_file_path = inputs_dir / f"{unique}.txt"
-    output_file_path = outputs_dir / f"{unique}.txt"
-
-    # Write code and input to files
-    code_file_path.write_text(code)
-    input_file_path.write_text(input_data)
-
-    output_data = ""
-    command = []
-
-    if language == "py":
-        command = ["python", str(code_file_path)]
-    elif language == "cpp":
-        executable_path = codes_dir / unique
-        compile_process = subprocess.run(
-            ["g++", str(code_file_path), "-o", str(executable_path)],
-            capture_output=True, text=True
-        )
-        if compile_process.returncode != 0:
-            return f"Compilation Error:\n{compile_process.stderr}"
-        command = [str(executable_path)]
-    elif language == "java":
-        code_file_path = codes_dir / "Main.java"
-        code_file_path.write_text(code)
-
-        compile_process = subprocess.run(
-            ["javac", str(code_file_path)],
-            capture_output=True, text=True
-        )
-        if compile_process.returncode != 0:
-            return f"Compilation Error:\n{compile_process.stderr}"
-
-        command = ["java", "-cp", str(codes_dir), "Main"]
-
-
-    # Execute the code
+def run_code(language, code, input_data, memory_limit=256):
+    # 1. Initialize Docker client
     try:
-        with open(input_file_path, "r") as input_file, open(output_file_path, "w") as output_file:
-            subprocess.run(
-                command,
-                stdin=input_file,
-                stdout=output_file,
-                stderr=subprocess.PIPE,
-                text=True,
-                timeout=10 # Add a timeout!
+        client = docker.from_env()
+    except docker.errors.DockerException:
+        return "Error: Docker is not running or misconfigured."
+
+    # 2. Create a temporary directory on the host machine
+    # This directory will be shared with the container
+    with tempfile.TemporaryDirectory() as temp_dir:
+        host_dir = Path(temp_dir)
+        
+        # Determine the filename based on the language
+        if language == "py":
+            filename = "main.py"
+        elif language == "cpp":
+            filename = "main.cpp"
+        elif language == "java":
+            filename = "Main.java"
+        else:
+            return "Unsupported language."
+
+        # 3. Save the user's code and input data into the temporary directory
+        (host_dir / filename).write_text(code)
+        (host_dir / "input.txt").write_text(input_data)
+
+        # 4. Define the command to be executed inside the container
+        # This script compiles (if necessary) and runs the code, redirecting I/O
+        if language == "py":
+            container_command = "/bin/sh -c 'python main.py < input.txt'"
+        elif language == "cpp":
+            container_command = "/bin/sh -c 'g++ main.cpp -o main && ./main < input.txt'"
+        elif language == "java":
+            container_command = "/bin/sh -c 'javac Main.java && java Main < input.txt'"
+
+        # 5. Run the code in a new, isolated Docker container
+        try:
+            container = client.containers.run(
+                image="onlinejudge-web:latest", # Use the image you build with docker-compose
+                command=container_command,
+                volumes={host_dir: {'bind': '/sandbox', 'mode': 'rw'}},
+                working_dir="/sandbox",
+                mem_limit=f"{memory_limit}m",       # Set memory limit
+                cpus=0.5,               # Set CPU limit
+                network_disabled=True,  # Disable network access
+                detach=True,            # Run in the background
             )
-        output_data = output_file_path.read_text()
-    except subprocess.TimeoutExpired:
-        output_data = "Execution Timed Out (10 seconds)"
-    except Exception as e:
-        output_data = f"An unexpected error occurred: {str(e)}"
+
+            # Wait for the container to finish, with a timeout
+            result = container.wait(timeout=10)
+            
+            # Get the output from the container's logs
+            output_data = container.logs(stdout=True, stderr=True).decode('utf-8')
+
+            # Check for errors
+            if result['StatusCode'] != 0:
+                # If there's an error, the output_data likely contains the error message
+                return f"Execution Error:\n{output_data}"
+
+        except docker.errors.ContainerError as e:
+            return f"Container Error: {e}"
+        except Exception as e:
+            # This catches timeouts and other exceptions
+            return f"An error occurred: {e}"
+        finally:
+            # 6. Clean up: Stop and remove the container
+            try:
+                container.stop()
+                container.remove()
+            except NameError:
+                pass # Container was never created
 
     return output_data
 

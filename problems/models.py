@@ -11,6 +11,7 @@ class Problem(models.Model):
     description = models.TextField()
     difficulty  = models.CharField(max_length=10, choices=DIFFICULTY_CHOICES)
     created_at  = models.DateTimeField(auto_now_add=True)
+    memory_limit = models.IntegerField(default=256, help_text="Memory limit in MB")
     
     def __str__(self):
         return self.title 
