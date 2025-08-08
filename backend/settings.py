@@ -18,7 +18,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Read all settings from environment variables
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
 DEBUG = os.getenv('DJANGO_DEBUG', 'False') == 'True'
-ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', '').split(',')
+ALLOWED_HOSTS = ['13.49.76.151', 'www.kamandprompt.online', 'kamandprompt.online']
+CSRF_TRUSTED_ORIGINS = ['http://13.49.76.151', 'https://www.kamandprompt.online', 'https://kamandprompt.online']
 
 # Application definition
 
