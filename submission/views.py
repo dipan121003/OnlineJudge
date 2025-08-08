@@ -104,6 +104,7 @@ def submission_result(request, submission_id):
     return render(request, 'submission/solution_result.html', {'submission': submission})
 
 def run_code(language, code, input_data, memory_limit=256):
+    image_name = os.getenv('DOCKER_IMAGE_NAME', 'onlinejudge-web:latest')
     # 1. Initialize Docker client
     try:
         client = docker.from_env()
@@ -141,7 +142,7 @@ def run_code(language, code, input_data, memory_limit=256):
         # 5. Run the code in a new, isolated Docker container
         try:
             container = client.containers.run(
-                image="onlinejudge-web:latest", # Use the image you build with docker-compose
+                image=image_name, # Use the image you build with docker-compose
                 command=container_command,
                 volumes={host_dir: {'bind': '/sandbox', 'mode': 'rw'}},
                 working_dir="/sandbox",
