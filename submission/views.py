@@ -114,12 +114,10 @@ def run_code(language, code, input_data, memory_limit=256):
 
     # MODIFICATION: Create a temporary folder within a known project directory
     # This provides more reliable pathing on the server.
-    base_temp_dir = settings.BASE_DIR / 'submissions_temp'
-    base_temp_dir.mkdir(exist_ok=True)
-    
+    base_temp_dir = Path('/submissions_temp')
     unique_id = str(uuid.uuid4())
-    host_dir = base_temp_dir / unique_id
-    host_dir.mkdir()
+    submission_dir = base_temp_dir / unique_id
+    submission_dir.mkdir(parents=True, exist_ok=True) 
 
     try:
         if language == "py":
@@ -131,8 +129,9 @@ def run_code(language, code, input_data, memory_limit=256):
         else:
             return "Unsupported language."
 
-        (host_dir / filename).write_text(code)
-        (host_dir / "input.txt").write_text(input_data)
+        (submission_dir / filename).write_text(code)
+        (submission_dir / "input.txt").write_text(input_data)
+
 
         if language == "py":
             container_command = "/bin/sh -c 'python main.py < input.txt'"
@@ -145,7 +144,7 @@ def run_code(language, code, input_data, memory_limit=256):
         container = client.containers.run(
             image=image_name,
             command=container_command,
-            volumes={str(host_dir): {'bind': '/sandbox', 'mode': 'rw'}}, # Ensure host_dir is a string
+            volumes={str(submission_dir): {'bind': '/sandbox', 'mode': 'rw'}},
             working_dir="/sandbox",
             mem_limit=f"{memory_limit}m",
             nano_cpus=int(0.5 * 1e9),
@@ -168,7 +167,7 @@ def run_code(language, code, input_data, memory_limit=256):
         except NameError:
             pass # Container was never created
         # Safely remove the temporary directory and all its contents
-        shutil.rmtree(host_dir, ignore_errors=True)
+        shutil.rmtree(submission_dir, ignore_errors=True)
 
     return output_data
 
