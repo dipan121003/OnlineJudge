@@ -110,7 +110,7 @@ def run_code(language, code, input_data, memory_limit=256):
         return "Error: Sandbox image is not configured."
 
     try:
-        client = docker.from_env()
+        client = docker.from_env(timeout=30)
         
         # Prepare the input for the sandbox runner script
         # We send language, then code, then a delimiter, then input
