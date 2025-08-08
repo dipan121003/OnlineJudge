@@ -104,72 +104,47 @@ def submission_result(request, submission_id):
     return render(request, 'submission/solution_result.html', {'submission': submission})
 
 def run_code(language, code, input_data, memory_limit=256):
-    # Get the image name from an environment variable, with a fallback for local dev
-    image_name = os.getenv('DOCKER_IMAGE_NAME', 'onlinejudge-web:latest')
-    
+    # Get the SANDBOX image name from an environment variable
+    image_name = os.getenv('DOCKER_SANDBOX_IMAGE_NAME')
+    if not image_name:
+        return "Error: Sandbox image is not configured."
+
     try:
         client = docker.from_env()
-    except docker.errors.DockerException:
-        return "Error: Docker is not running or misconfigured."
+        
+        # Prepare the input for the sandbox runner script
+        # We send language, then code, then a delimiter, then input
+        stdin_payload = f"{language}\n{code}---!!!INPUT_DELIMITER!!!---{input_data}"
 
-    # MODIFICATION: Create a temporary folder within a known project directory
-    # This provides more reliable pathing on the server.
-    base_temp_dir = Path('/submissions_temp')
-    unique_id = str(uuid.uuid4())
-    submission_dir = base_temp_dir / unique_id
-    submission_dir.mkdir(parents=True, exist_ok=True) 
-
-    try:
-        if language == "py":
-            filename = "main.py"
-        elif language == "cpp":
-            filename = "main.cpp"
-        elif language == "java":
-            filename = "Main.java"
-        else:
-            return "Unsupported language."
-
-        (submission_dir / filename).write_text(code)
-        (submission_dir / "input.txt").write_text(input_data)
-
-
-        if language == "py":
-            container_command = "/bin/sh -c 'python main.py < input.txt'"
-        elif language == "cpp":
-            container_command = "/bin/sh -c 'g++ main.cpp -o main && ./main < input.txt'"
-        elif language == "java":
-            container_command = "/bin/sh -c 'javac Main.java && java Main < input.txt'"
-
-        # Run the code in a new, isolated Docker container
         container = client.containers.run(
             image=image_name,
-            command=container_command,
-            volumes={str(submission_dir): {'bind': '/sandbox', 'mode': 'rw'}},
-            working_dir="/sandbox",
+            stdin_open=True,
             mem_limit=f"{memory_limit}m",
             nano_cpus=int(0.5 * 1e9),
             network_disabled=True,
             detach=True,
         )
-        result = container.wait(timeout=10)
-        output_data = container.logs(stdout=True, stderr=True).decode('utf-8')
+
+        # Write the payload to the container's stdin
+        socket = container.attach_socket(params={'stdin': 1, 'stream': 1})
+        socket._sock.sendall(stdin_payload.encode('utf-8'))
+        socket.close()
+
+        # Wait for container to finish, with a timeout
+        result = container.wait(timeout=15)
+        # Get the output from the container's logs
+        output = container.logs().decode('utf-8')
         
+        # Clean up the container
+        container.remove()
+
         if result['StatusCode'] != 0:
-            return f"Execution Error:\n{output_data}"
+            return f"Execution Error:\n{output}"
 
     except Exception as e:
         return f"An error occurred: {e}"
-    finally:
-        # Clean up the container and the temporary host directory
-        try:
-            container.stop()
-            container.remove()
-        except NameError:
-            pass # Container was never created
-        # Safely remove the temporary directory and all its contents
-        shutil.rmtree(submission_dir, ignore_errors=True)
 
-    return output_data
+    return output
 
 @login_required
 def get_ai_suggestion(request, problem_id):

@@ -5,8 +5,8 @@ FROM python:3.11-slim
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-# Install g++ and jdk compiler and other dependencies
-RUN apt-get update && apt-get install -y g++ default-jdk
+# MODIFICATION: Removed the line that installs g++ and default-jdk.
+# Compilers are now in the separate sandbox image.
 
 # Set the working directory in the container
 WORKDIR /app
