@@ -3,8 +3,8 @@ from django.shortcuts import render
 from django.conf import settings
 import os
 import uuid
-import subprocess
 from pathlib import Path
+import shutil 
 from .forms import CodeSubmissionForm
 from django.contrib.auth.decorators import login_required
 from problems.models import Problem
@@ -104,19 +104,24 @@ def submission_result(request, submission_id):
     return render(request, 'submission/solution_result.html', {'submission': submission})
 
 def run_code(language, code, input_data, memory_limit=256):
+    # Get the image name from an environment variable, with a fallback for local dev
     image_name = os.getenv('DOCKER_IMAGE_NAME', 'onlinejudge-web:latest')
-    # 1. Initialize Docker client
+    
     try:
         client = docker.from_env()
     except docker.errors.DockerException:
         return "Error: Docker is not running or misconfigured."
 
-    # 2. Create a temporary directory on the host machine
-    # This directory will be shared with the container
-    with tempfile.TemporaryDirectory() as temp_dir:
-        host_dir = Path(temp_dir)
-        
-        # Determine the filename based on the language
+    # MODIFICATION: Create a temporary folder within a known project directory
+    # This provides more reliable pathing on the server.
+    base_temp_dir = settings.BASE_DIR / 'submissions_temp'
+    base_temp_dir.mkdir(exist_ok=True)
+    
+    unique_id = str(uuid.uuid4())
+    host_dir = base_temp_dir / unique_id
+    host_dir.mkdir()
+
+    try:
         if language == "py":
             filename = "main.py"
         elif language == "cpp":
@@ -126,12 +131,9 @@ def run_code(language, code, input_data, memory_limit=256):
         else:
             return "Unsupported language."
 
-        # 3. Save the user's code and input data into the temporary directory
         (host_dir / filename).write_text(code)
         (host_dir / "input.txt").write_text(input_data)
 
-        # 4. Define the command to be executed inside the container
-        # This script compiles (if necessary) and runs the code, redirecting I/O
         if language == "py":
             container_command = "/bin/sh -c 'python main.py < input.txt'"
         elif language == "cpp":
@@ -139,42 +141,34 @@ def run_code(language, code, input_data, memory_limit=256):
         elif language == "java":
             container_command = "/bin/sh -c 'javac Main.java && java Main < input.txt'"
 
-        # 5. Run the code in a new, isolated Docker container
+        # Run the code in a new, isolated Docker container
+        container = client.containers.run(
+            image=image_name,
+            command=container_command,
+            volumes={str(host_dir): {'bind': '/sandbox', 'mode': 'rw'}}, # Ensure host_dir is a string
+            working_dir="/sandbox",
+            mem_limit=f"{memory_limit}m",
+            nano_cpus=int(0.5 * 1e9),
+            network_disabled=True,
+            detach=True,
+        )
+        result = container.wait(timeout=10)
+        output_data = container.logs(stdout=True, stderr=True).decode('utf-8')
+        
+        if result['StatusCode'] != 0:
+            return f"Execution Error:\n{output_data}"
+
+    except Exception as e:
+        return f"An error occurred: {e}"
+    finally:
+        # Clean up the container and the temporary host directory
         try:
-            container = client.containers.run(
-                image=image_name, # Use the image you build with docker-compose
-                command=container_command,
-                volumes={host_dir: {'bind': '/sandbox', 'mode': 'rw'}},
-                working_dir="/sandbox",
-                mem_limit=f"{memory_limit}m",       # Set memory limit
-                nano_cpus=int(0.5 * 1e9),              # Set CPU limit
-                network_disabled=True,  # Disable network access
-                detach=True,            # Run in the background
-            )
-
-            # Wait for the container to finish, with a timeout
-            result = container.wait(timeout=10)
-            
-            # Get the output from the container's logs
-            output_data = container.logs(stdout=True, stderr=True).decode('utf-8')
-
-            # Check for errors
-            if result['StatusCode'] != 0:
-                # If there's an error, the output_data likely contains the error message
-                return f"Execution Error:\n{output_data}"
-
-        except docker.errors.ContainerError as e:
-            return f"Container Error: {e}"
-        except Exception as e:
-            # This catches timeouts and other exceptions
-            return f"An error occurred: {e}"
-        finally:
-            # 6. Clean up: Stop and remove the container
-            try:
-                container.stop()
-                container.remove()
-            except NameError:
-                pass # Container was never created
+            container.stop()
+            container.remove()
+        except NameError:
+            pass # Container was never created
+        # Safely remove the temporary directory and all its contents
+        shutil.rmtree(host_dir, ignore_errors=True)
 
     return output_data
 
