@@ -3,8 +3,8 @@ from django.shortcuts import render
 from django.conf import settings
 import os
 import uuid
+import subprocess
 from pathlib import Path
-import shutil 
 from .forms import CodeSubmissionForm
 from django.contrib.auth.decorators import login_required
 from problems.models import Problem
@@ -12,8 +12,6 @@ from .models import CodeSubmission
 from django.shortcuts import get_object_or_404, redirect
 import google.generativeai as genai
 from dotenv import load_dotenv
-import docker
-import tempfile
 
 @login_required
 def submit_code(request):
@@ -104,47 +102,79 @@ def submission_result(request, submission_id):
     return render(request, 'submission/solution_result.html', {'submission': submission})
 
 def run_code(language, code, input_data, memory_limit=256):
-    # Get the SANDBOX image name from an environment variable
-    image_name = os.getenv('DOCKER_SANDBOX_IMAGE_NAME')
-    if not image_name:
-        return "Error: Sandbox image is not configured."
+    # This path is inside the main 'web' container
+    project_path = Path('/app')
+    
+    # Define directories for storing temporary files
+    codes_dir = project_path / "codes"
+    inputs_dir = project_path / "inputs"
+    outputs_dir = project_path / "outputs"
 
-    try:
-        client = docker.from_env(timeout=30)
-        
-        # Prepare the input for the sandbox runner script
-        # We send language, then code, then a delimiter, then input
-        stdin_payload = f"{language}\n{code}---!!!INPUT_DELIMITER!!!---{input_data}"
+    # Create directories if they don't exist
+    codes_dir.mkdir(exist_ok=True)
+    inputs_dir.mkdir(exist_ok=True)
+    outputs_dir.mkdir(exist_ok=True)
 
-        container = client.containers.run(
-            image=image_name,
-            stdin_open=True,
-            mem_limit=f"{memory_limit}m",
-            nano_cpus=int(0.5 * 1e9),
-            network_disabled=True,
-            detach=True,
+    unique = str(uuid.uuid4())
+    
+    # Define file paths using the unique ID
+    if language == "java":
+        code_file_path = codes_dir / "Main.java"
+    elif language == "py":
+        code_file_path = codes_dir / f"{unique}.py"
+    elif language == "cpp":
+        code_file_path = codes_dir / f"{unique}.cpp"
+    else:
+        return "Unsupported language."
+
+    input_file_path = inputs_dir / f"{unique}.txt"
+    output_file_path = outputs_dir / f"{unique}.txt"
+
+    # Write code and input to their respective files
+    code_file_path.write_text(code)
+    input_file_path.write_text(input_data)
+
+    output_data = ""
+    command = []
+
+    if language == "py":
+        command = ["python", str(code_file_path)]
+    elif language == "cpp":
+        executable_path = codes_dir / unique
+        compile_process = subprocess.run(
+            ["g++", str(code_file_path), "-o", str(executable_path)],
+            capture_output=True, text=True
         )
-
-        # Write the payload to the container's stdin
-        socket = container.attach_socket(params={'stdin': 1, 'stream': 1})
-        socket._sock.sendall(stdin_payload.encode('utf-8'))
-        socket.close()
-
-        # Wait for container to finish, with a timeout
-        result = container.wait(timeout=15)
-        # Get the output from the container's logs
-        output = container.logs().decode('utf-8')
-        
-        # Clean up the container
-        container.remove()
-
-        if result['StatusCode'] != 0:
-            return f"Execution Error:\n{output}"
-
+        if compile_process.returncode != 0:
+            return f"Compilation Error:\n{compile_process.stderr}"
+        command = [str(executable_path)]
+    elif language == "java":
+        compile_process = subprocess.run(
+            ["javac", str(code_file_path)],
+            capture_output=True, text=True
+        )
+        if compile_process.returncode != 0:
+            return f"Compilation Error:\n{compile_process.stderr}"
+        command = ["java", "-cp", str(codes_dir), "Main"]
+    
+    # Execute the command
+    try:
+        with open(input_file_path, "r") as input_file, open(output_file_path, "w") as output_file:
+            subprocess.run(
+                command,
+                stdin=input_file,
+                stdout=output_file,
+                stderr=subprocess.PIPE,
+                text=True,
+                timeout=10
+            )
+        output_data = output_file_path.read_text()
+    except subprocess.TimeoutExpired:
+        output_data = "Execution Timed Out (10 seconds)"
     except Exception as e:
-        return f"An error occurred: {e}"
-
-    return output
+        output_data = f"An unexpected error occurred: {str(e)}"
+    
+    return output_data
 
 @login_required
 def get_ai_suggestion(request, problem_id):

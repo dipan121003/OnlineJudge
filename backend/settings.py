@@ -12,28 +12,13 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
-from dotenv import load_dotenv
 
-
-load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY WARNING: keep the secret key used in production secret!
-# Use the environment variable, or your local key as a default
-SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'your-local-default-key')
-DEBUG = os.getenv('DJANGO_DEBUG', 'True') == 'True'
-
-# Use the environment variable, split by comma
-ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
-CSRF_TRUSTED_ORIGINS = os.getenv('DJANGO_CSRF_TRUSTED_ORIGINS', 'http://127.0.0.1:8000,http://localhost:8000').split(',')
-
-ALLOWED_HOSTS = [
-    '13.49.76.151',
-    '127.0.0.1',
-    ]
-
-CSRF_TRUSTED_ORIGINS = ['http://13.49.76.151']
-
+# Read all settings from environment variables
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
+DEBUG = os.getenv('DJANGO_DEBUG', 'False') == 'True'
+ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', '').split(',')
 
 # Application definition
 

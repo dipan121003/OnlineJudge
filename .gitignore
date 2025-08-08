@@ -20,5 +20,3 @@ staticfiles/
 .env
 check_models.py
 media/
-submissions_temp/
-sandbox/

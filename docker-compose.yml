@@ -1,18 +1,12 @@
 services:
   web:
     build: .
-    command: gunicorn backend.wsgi:application --bind 0.0.0.0:8000
+    command: python manage.py runserver 0.0.0.0:8000
+    environment:
+      - DJANGO_DEBUG=True
+      - DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
+      - DJANGO_SECRET_KEY='3619a455ea387d68ad131f24f919fe9afa2a47e9000874846cf9334b49f4da3a'
     volumes:
-      - .:/app  # This links your local code for live updates
-      - /var/run/docker.sock:/var/run/docker.sock
-    expose:
-      - 8000
-    
-  nginx:
-    image: nginx:latest
+      - .:/app
     ports:
-      - "80:80" # You can access the site at http://localhost
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
-    depends_on:
-      - web
+      - "8000:8000"

@@ -5,23 +5,18 @@ FROM python:3.11-slim
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-# MODIFICATION: Removed the line that installs g++ and default-jdk.
-# Compilers are now in the separate sandbox image.
+# MODIFICATION: Add the compilers back to this image
+RUN apt-get update && apt-get install -y g++ default-jdk
 
 # Set the working directory in the container
 WORKDIR /app
 
-# Copy the requirements file into the container
+# Copy and install Python packages
 COPY requirements.txt .
-
-# Install any needed packages specified in requirements.txt
 RUN pip install -r requirements.txt
 
 # Copy the rest of the application code into the container
 COPY . .
 
-# Expose port 8000 to allow communication to/from server
-EXPOSE 8000
-
-# Define the command to run your app
+# The command to run the development server
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
