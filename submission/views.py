@@ -146,7 +146,7 @@ def run_code(language, code, input_data, memory_limit=256):
                 volumes={host_dir: {'bind': '/sandbox', 'mode': 'rw'}},
                 working_dir="/sandbox",
                 mem_limit=f"{memory_limit}m",       # Set memory limit
-                cpus=0.5,               # Set CPU limit
+                nano_cpus=int(0.5 * 1e9),              # Set CPU limit
                 network_disabled=True,  # Disable network access
                 detach=True,            # Run in the background
             )
