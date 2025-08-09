@@ -6,7 +6,9 @@ services:
       - DJANGO_DEBUG=True
       - DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
       - DJANGO_SECRET_KEY='3619a455ea387d68ad131f24f919fe9afa2a47e9000874846cf9334b49f4da3a'
+      - DOCKER_SANDBOX_IMAGE_NAME=onlinejudge-sandbox:latest
     volumes:
       - .:/app
+      - /var/run/docker.sock:/var/run/docker.sock
     ports:
       - "8000:8000"
