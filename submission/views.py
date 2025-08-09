@@ -101,81 +101,6 @@ def submission_result(request, submission_id):
     submission = get_object_or_404(CodeSubmission, id=submission_id)
     return render(request, 'submission/solution_result.html', {'submission': submission})
 
-# def run_code(language, code, input_data, memory_limit=256):
-#     # This path is inside the main 'web' container
-#     project_path = Path('/app')
-    
-#     # Define directories for storing temporary files
-#     codes_dir = project_path / "codes"
-#     inputs_dir = project_path / "inputs"
-#     outputs_dir = project_path / "outputs"
-
-#     # Create directories if they don't exist
-#     codes_dir.mkdir(exist_ok=True)
-#     inputs_dir.mkdir(exist_ok=True)
-#     outputs_dir.mkdir(exist_ok=True)
-
-#     unique = str(uuid.uuid4())
-    
-#     # Define file paths using the unique ID
-#     if language == "java":
-#         code_file_path = codes_dir / "Main.java"
-#     elif language == "py":
-#         code_file_path = codes_dir / f"{unique}.py"
-#     elif language == "cpp":
-#         code_file_path = codes_dir / f"{unique}.cpp"
-#     else:
-#         return "Unsupported language."
-
-#     input_file_path = inputs_dir / f"{unique}.txt"
-#     output_file_path = outputs_dir / f"{unique}.txt"
-
-#     # Write code and input to their respective files
-#     code_file_path.write_text(code)
-#     input_file_path.write_text(input_data)
-
-#     output_data = ""
-#     command = []
-
-#     if language == "py":
-#         command = ["python", str(code_file_path)]
-#     elif language == "cpp":
-#         executable_path = codes_dir / unique
-#         compile_process = subprocess.run(
-#             ["g++", str(code_file_path), "-o", str(executable_path)],
-#             capture_output=True, text=True
-#         )
-#         if compile_process.returncode != 0:
-#             return f"Compilation Error:\n{compile_process.stderr}"
-#         command = [str(executable_path)]
-#     elif language == "java":
-#         compile_process = subprocess.run(
-#             ["javac", str(code_file_path)],
-#             capture_output=True, text=True
-#         )
-#         if compile_process.returncode != 0:
-#             return f"Compilation Error:\n{compile_process.stderr}"
-#         command = ["java", "-cp", str(codes_dir), "Main"]
-    
-#     # Execute the command
-#     try:
-#         with open(input_file_path, "r") as input_file, open(output_file_path, "w") as output_file:
-#             subprocess.run(
-#                 command,
-#                 stdin=input_file,
-#                 stdout=output_file,
-#                 stderr=subprocess.PIPE,
-#                 text=True,
-#                 timeout=10
-#             )
-#         output_data = output_file_path.read_text()
-#     except subprocess.TimeoutExpired:
-#         output_data = "Execution Timed Out (10 seconds)"
-#     except Exception as e:
-#         output_data = f"An unexpected error occurred: {str(e)}"
-    
-#     return output_data
-
 @login_required
 def get_ai_suggestion(request, problem_id):
     # --- 1. SETUP ---
@@ -302,15 +227,21 @@ def run_code(language, code, input_data, memory_limit=256):
             text=True,
             timeout=15 # A generous timeout for the entire process
         )
+        
+        if result.returncode == 137:
+            return "Memory Limit Exceeded"
 
         # The runner.py script is designed to print errors to stderr
         if result.stderr:
-            return f"Execution Error:\n{result.stderr}"
+            if "Execution Timed Out" in result.stderr:
+                return "Time Limit Exceeded"
+            else:
+                return f"Execution Error:\n{result.stderr}"
 
         # If successful, the output is in stdout
         return result.stdout
 
     except subprocess.TimeoutExpired:
-        return "Execution Timed Out (15 seconds)"
+        return "Time Limit Exceeded"
     except Exception as e:
         return f"An unexpected error occurred: {e}"

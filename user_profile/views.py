@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 import calendar
 from django.utils import timezone
 from .forms import ProfilePictureForm
+from django.db.models import Count, Q, Case, When, IntegerField
 
 @login_required
 def profile_view(request, username):
@@ -65,3 +66,38 @@ def edit_profile(request, username):
         'form': form
     }
     return render(request, 'user_profile/edit_profile.html', context)
+
+@login_required
+def leaderboard_view(request):
+    
+    users_with_scores = User.objects.annotate(
+        solved_easy=Count(
+            'codesubmission__problem',
+            filter=Q(codesubmission__verdict="Accepted", codesubmission__problem__difficulty='Easy'),
+            distinct=True
+        ),
+        solved_medium=Count(
+            'codesubmission__problem',
+            filter=Q(codesubmission__verdict="Accepted", codesubmission__problem__difficulty='Medium'),
+            distinct=True
+        ),
+        solved_hard=Count(
+            'codesubmission__problem',
+            filter=Q(codesubmission__verdict="Accepted", codesubmission__problem__difficulty='Hard'),
+            distinct=True
+        ),
+        # You can create a weighted score for ranking
+        total_score=Case(
+            When(solved_easy__gt=0, then=1),
+            When(solved_medium__gt=0, then=3),
+            When(solved_hard__gt=0, then=5),
+            default=0,
+            output_field=IntegerField()
+        ) * (Count('codesubmission__problem', filter=Q(codesubmission__verdict="Accepted"), distinct=True))
+    ).filter(total_score__gt=0).order_by('-total_score')
+
+    context = {
+        'ranked_users': users_with_scores,
+    }
+
+    return render(request, 'user_profile/leaderboard.html', context)

@@ -26,6 +26,7 @@ urlpatterns = [
     path('problems/', include('problems.urls')),  # Include URLs from the problems
     path('submit/', include('submission.urls')),  # Include URLs from the submission app
     path('profile/', include('user_profile.urls')),  # Include URLs from the user_profile app
+    path('contest/', include('contest.urls')),  # Include URLs from the contest app
 ]
 
 if settings.DEBUG:

@@ -69,6 +69,9 @@
             <a class="nav-link" href="{% url 'submission_list' problem.id %}">My Submissions</a>
           </li>
           <li class="nav-item">
+            <a class="nav-link" href="{% url 'leaderboard' %}">Leaderboard</a>
+          </li>
+          <li class="nav-item">
             <a class="nav-link" href="{% url 'profile_view' request.user.username %}">Profile</a>
           </li>
           <li class="nav-item">

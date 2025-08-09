@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+{% load static %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ contest.title }} - Contest Details</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-image: url("{% static 'images/problems_background.png' %}");
+            background-size: cover;
+            background-attachment: fixed;
+            background-color: #0a192f;
+            color: #f0f0f0;
+        }
+        .card {
+            background-color: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .page-title {
+            color: white;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+        }
+        .text-muted {
+            color: #bdc3c7 !important;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-transparent mb-4">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/">Online Judge</a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav ms-auto">
+                    {% if request.user.is_authenticated %}
+                        <li class="nav-item"><a class="nav-link" href="{% url 'problems-list' %}">Problems</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'contest_list' %}">Contests</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'leaderboard' %}">Leaderboard</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'profile_view' request.user.username %}">Profile</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'logout-user' %}">Logout</a></li>
+                    {% else %}
+                        <li class="nav-item"><a class="nav-link" href="{% url 'login-user' %}">Login</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'register-user' %}">Register</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-5">
+        <h1 class="page-title">{{ contest.title }}</h1>
+        <p class="lead text-muted">Hosted by {{ contest.created_by.username }}</p>
+        <hr style="color: rgba(255,255,255,0.3);">
+
+        <div class="card mt-4">
+            <div class="card-body">
+                <p><strong>Starts:</strong> {{ contest.start_time|date:"F d, Y, P" }}</p>
+                <p><strong>Ends:</strong> {{ contest.end_time|date:"F d, Y, P" }}</p>
+                <hr>
+                <p>{{ contest.description|linebreaks }}</p>
+
+                {% if request.user.is_authenticated %}
+                    
+                    {% if contest.is_active and is_registered %}
+                        <a href="{% url 'contest_interface' contest.id %}" class="btn btn-success">Enter Contest</a>
+                    
+                    {% elif is_registered %}
+                        <button class="btn btn-success" disabled>You are Registered</button>
+
+                    {% else %}
+                        <a href="{% url 'register_for_contest' contest.id %}" class="btn btn-primary">Register for this Contest</a>
+                    {% endif %}
+
+                {% else %}
+                    <p class="mt-3"><a href="{% url 'login-user' %}">Login</a> to register for this contest.</p>
+                {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                Problems
+            </div>
+            <div class="card-body">
+                {% if contest.is_active %}
+                    <p>Problems will be listed here.</p>
+                {% else %}
+                    <p class="text-muted">The problems will be visible here once the contest begins.</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <a href="{% url 'contest_list' %}" class="btn btn-secondary mt-4">Back to Contests</a>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

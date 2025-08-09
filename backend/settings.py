@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     'problems',  # Custom app for problems listing and management
     'submission',  # Custom app for handling submission
     'user_profile',  # Custom app for user profiles
+    'contest',  # Custom app for contests
 ]
 
 MIDDLEWARE = [

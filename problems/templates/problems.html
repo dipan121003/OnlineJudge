@@ -62,8 +62,16 @@
         <ul class="navbar-nav ms-auto">
           {% if request.user.is_authenticated %}
           <li class="nav-item">
+            <a class="nav-link" href="{% url 'leaderboard' %}">Leaderboard</a>
+          </li>
+          <li class="nav-item">
             <a class="nav-link" href="{% url 'profile_view' request.user.username %}">Profile</a>
           </li>
+          {% if perms.auth.add_contest %}
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'create_contest' %}">Create Contest</a>
+            </li>
+          {% endif %}
           <li class="nav-item">
             <a class="nav-link" href="{% url 'logout-user' %}">Logout</a>
           </li>
@@ -82,6 +90,28 @@
 
   <div class="container">
     <h1 class="text-center page-title mb-4">All Problems</h1>
+
+    {% if active_contests or upcoming_contests %}
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title" style="color: #4dd0e1;">Featured Contests</h5>
+            {% for contest in active_contests %}
+                <div class="alert alert-success">
+                    <strong>Live Now!</strong>
+                    <a href="{% url 'contest_detail' contest.id %}" class="alert-link">{{ contest.title }}</a>
+                    - Ends {{ contest.end_time|date:"F d, P" }}
+                </div>
+            {% endfor %}
+            {% for contest in upcoming_contests %}
+                <div class="alert alert-info">
+                    <strong>Upcoming:</strong>
+                    <a href="{% url 'contest_detail' contest.id %}" class="alert-link">{{ contest.title }}</a>
+                    - Starts {{ contest.start_time|date:"F d, P" }}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
 
     <div class="list-group">
       {% for problem in problems %}

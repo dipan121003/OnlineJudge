@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Create a New Contest</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <div class="container py-5">
+        <h1>Create a New Contest</h1>
+        <p>Fill out the details below to set up your contest and add problems.</p>
+
+        <form method="post" id="contest-form">
+            {% csrf_token %}
+
+            {{ problem_formset.management_form }}
+
+            <div class="card mb-4">
+                <div class="card-header">Contest Details</div>
+                <div class="card-body">
+                    {{ contest_form.as_p }}
+                </div>
+            </div>
+
+            <div id="problem-forms-container">
+                <h3 class="mb-3">Contest Problems</h3>
+                {% for form in problem_formset %}
+                    <div class="card problem-form mb-3">
+                        <div class="card-body">
+                            {{ form.as_p }}
+                            {% if form.instance.pk %}
+                                <div class="form-check">
+                                    {{ form.DELETE }}
+                                    <label class="form-check-label" for="{{ form.DELETE.id_for_label }}">Delete this problem</label>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <button type="button" id="add-problem-btn" class="btn btn-secondary me-2">Add Another Problem</button>
+            <button type="submit" class="btn btn-primary">Create Contest and Add Problems</button>
+        </form>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const container = document.getElementById('problem-forms-container');
+            const addBtn = document.getElementById('add-problem-btn');
+
+            const formsetPrefix = '{{ problem_formset.prefix }}';
+            const totalFormsInput = document.getElementById(`id_${formsetPrefix}-TOTAL_FORMS`);
+
+            let formCount = parseInt(totalFormsInput.value);
+
+            addBtn.addEventListener('click', function() {
+                // Get the empty form template provided by Django
+                const emptyFormTemplate = document.getElementById('empty-form-template').innerHTML;
+
+                // Replace the '__prefix__' placeholder with the new form's index
+                const newFormHtml = emptyFormTemplate.replace(/__prefix__/g, formCount);
+
+                const newFormDiv = document.createElement('div');
+                newFormDiv.classList.add('card', 'problem-form', 'mb-3');
+                newFormDiv.innerHTML = `<div class="card-body">${newFormHtml}</div>`;
+                container.appendChild(newFormDiv);
+
+                // Increment the total form count and update the management form
+                totalFormsInput.value = ++formCount;
+            });
+        });
+    </script>
+
+    <template id="empty-form-template">
+        {{ problem_formset.empty_form.as_p }}
+    </template>
+</body>
+</html>
