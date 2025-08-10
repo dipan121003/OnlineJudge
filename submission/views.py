@@ -12,6 +12,8 @@ from .models import CodeSubmission
 from django.shortcuts import get_object_or_404, redirect
 import google.generativeai as genai
 from dotenv import load_dotenv
+import docker
+import time
 
 @login_required
 def submit_code(request):
@@ -206,12 +208,10 @@ def run_code(language, code, input_data, memory_limit=256):
         return "Error: Sandbox image is not configured."
 
     # Prepare the data to be sent to the container's standard input
-    # The runner.py script will read this in order
     stdin_payload = f"{language}\n{code}---!!!INPUT_DELIMITER!!!---{input_data}"
 
     try:
-        # Use a direct 'docker run' command via subprocess.
-        # This is faster and more reliable than using the Docker SDK.
+        # Use a direct 'docker run' command. This is faster and avoids API timeouts.
         result = subprocess.run(
             [
                 'docker', 'run',
@@ -228,20 +228,19 @@ def run_code(language, code, input_data, memory_limit=256):
             timeout=15 # A generous timeout for the entire process
         )
         
+        # Exit code 137 from Docker means the container was killed for using too much memory.
         if result.returncode == 137:
             return "Memory Limit Exceeded"
-
-        # The runner.py script is designed to print errors to stderr
+        
+        # If the runner script printed anything to stderr, it's a compilation or runtime error.
         if result.stderr:
-            if "Execution Timed Out" in result.stderr:
-                return "Time Limit Exceeded"
-            else:
-                return f"Execution Error:\n{result.stderr}"
+            return f"Execution Error:\n{result.stderr}"
 
-        # If successful, the output is in stdout
+        # If everything is fine, the output is in stdout.
         return result.stdout
 
     except subprocess.TimeoutExpired:
+        # If the entire 'docker run' process takes too long, it's a TLE.
         return "Time Limit Exceeded"
     except Exception as e:
         return f"An unexpected error occurred: {e}"

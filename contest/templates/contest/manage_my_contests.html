@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+{% load static %}
+<head>
+    <meta charset="UTF-8">
+    <title>Manage My Contests</title>
+    <link rel="icon" type="image/png" href="{% static 'images/favicon.png' %}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-image: url("{% static 'images/problems_background.png' %}");
+            background-size: cover;
+            background-attachment: fixed;
+            background-color: #0a192f;
+            color: #f0f0f0;
+        }
+        .list-group-item {
+            background-color: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #f0f0f0;
+        }
+        .page-title {
+            color: white;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-5">
+        <h1 class="page-title">Manage My Contests</h1>
+        <p>Select a contest below to add or edit its problems and test cases.</p>
+        <div class="list-group">
+            {% for contest in contests %}
+                <a href="{% url 'manage_contest_detail' contest.id %}" class="list-group-item list-group-item-action">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1">{{ contest.title }}</h5>
+                        <small>Starts: {{ contest.start_time|date:"F d, Y" }}</small>
+                    </div>
+                    <p class="mb-1">{{ contest.description|truncatewords:20 }}</p>
+                </a>
+            {% empty %}
+                <div class="list-group-item">
+                    You have not created any contests yet. <a href="{% url 'create_contest' %}">Create one now!</a>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>

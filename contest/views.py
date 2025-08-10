@@ -1,17 +1,13 @@
 # In contest/views.py
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponseForbidden
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.decorators import login_required, permission_required
 from django.utils import timezone
 from .forms import SubAdminRequestForm, ContestForm, ContestProblemFormSet
-from .models import SubAdminRequest, ContestProblem, Contest, ContestRegistration, ContestSubmission
+from .models import SubAdminRequest, ContestProblem, Contest, ContestRegistration, ContestSubmission, ContestTestCase
 from submission.views import run_code
+from django.forms import modelformset_factory
 
-
-
-
-def is_contest_creator(user):
-    return user.groups.filter(name='Contest Creator').exists()
 
 def contest_detail(request, contest_id):
     contest = get_object_or_404(Contest, id=contest_id)
@@ -52,7 +48,7 @@ def request_sub_admin_success(request):
 
 
 @login_required
-@user_passes_test(is_contest_creator) # Restrict access to contest creators
+@permission_required('contest.add_contest', login_url='/auth/login/') # Restrict access to contest creators
 def create_contest(request):
     if request.method == 'POST':
         contest_form = ContestForm(request.POST)
@@ -75,7 +71,7 @@ def create_contest(request):
                 form.instance.delete()
 
             # Redirect to a page where they can add test cases (we'll build this next)
-            return redirect('some_success_page_for_now') 
+            return redirect('contest_list') 
     else:
         contest_form = ContestForm()
         problem_formset = ContestProblemFormSet(queryset=ContestProblem.objects.none())
@@ -142,12 +138,30 @@ def submit_contest_problem(request, contest_id, problem_id):
         language = request.POST.get('language')
         code = request.POST.get('code')
 
-        # Determine the verdict
+        # --- MODIFICATION: Added the full verdict checking logic ---
         final_verdict = "Accepted"
         test_cases = problem.test_cases.all()
-        # ... (Add your full verdict checking logic here, same as your main submit_solution view) ...
 
-        # Create the contest submission record
+        if not test_cases.exists():
+            final_verdict = "System Error: No Test Cases"
+        else:
+            for case in test_cases:
+                # Use your existing run_code utility for each test case
+                # Note: We're not setting a memory limit here, but you could add it
+                output = run_code(language, code, case.input_data)
+                
+                # Check for execution errors first
+                if "Error" in output or "Timed Out" in output:
+                    final_verdict = output # Set verdict to the error message
+                    break # Stop checking other test cases
+
+                # Check if the code's output matches the test case's expected output
+                if output.strip() != case.output_data.strip():
+                    final_verdict = "Wrong Answer"
+                    break # Stop on the first wrong answer
+        # --- End of added logic ---
+
+        # Create the contest submission record with the correct verdict
         ContestSubmission.objects.create(
             contest=contest,
             problem=problem,
@@ -160,3 +174,51 @@ def submit_contest_problem(request, contest_id, problem_id):
         return redirect('contest_interface', contest_id=contest.id)
 
     return redirect('contest_interface', contest_id=contest.id)
+
+@login_required
+@permission_required('contest.add_contest', login_url='/auth/login/')
+def manage_my_contests(request):
+    contests = Contest.objects.filter(created_by=request.user).order_by('-created_at')
+    return render(request, 'contest/manage_my_contests.html', {'contests': contests})
+
+@login_required
+def manage_contest_detail(request, contest_id):
+    contest = get_object_or_404(Contest, id=contest_id, created_by=request.user)
+
+    # We will create a simple formset for test cases
+    TestCaseFormSet = modelformset_factory(
+        ContestTestCase, 
+        fields=('input_data', 'output_data'), 
+        extra=1, 
+        can_delete=True
+    )
+
+    if request.method == 'POST':
+        # This logic handles adding/editing test cases for a specific problem
+        problem_id = request.POST.get('problem_id')
+        problem = get_object_or_404(ContestProblem, id=problem_id, contest=contest)
+        formset = TestCaseFormSet(request.POST, queryset=problem.test_cases.all())
+
+        if formset.is_valid():
+            instances = formset.save(commit=False)
+            for instance in instances:
+                instance.problem = problem
+                instance.save()
+            formset.save_m2m() # Important for many-to-many relationships if any
+
+            # Handle deleted forms
+            for form in formset.deleted_forms:
+                form.instance.delete()
+
+            return redirect('manage_contest_detail', contest_id=contest.id)
+
+    # Prepare a dictionary of formsets, one for each problem
+    problem_formsets = {}
+    for problem in contest.problems.all():
+        problem_formsets[problem.id] = TestCaseFormSet(queryset=problem.test_cases.all())
+
+    context = {
+        'contest': contest,
+        'problem_formsets': problem_formsets,
+    }
+    return render(request, 'contest/manage_contest_detail.html', context)

@@ -5,53 +5,72 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Problems – Online Judge</title>
+  <title>Problems – Kamand Prompt</title>
+  <link rel="icon" type="image/png" href="{% static 'images/favicon.png' %}">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
   <style>
-    body {
-      background-image: url("{% static 'images/problems_background.png' %}");
-      background-size: cover;
-      background-attachment: fixed;
-      background-color: #f8f9fa;
-    }
+        body {
+            background-image: url("{% static 'images/problems_background.png' %}");
+            background-size: cover;
+            background-attachment: fixed;
+            background-color: #0a192f; /* Dark blue fallback color */
+        }
 
-    /* MODIFICATION: Style for the list group items */
-    .list-group-item {
-      background-color: rgba(255, 255, 255, 0.1);
-      /* Semi-transparent white background */
-      backdrop-filter: blur(10px);
-      /* Modern blur effect */
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      /* Subtle border */
-      color: #f0f0f0;
-      /* Light text color for contrast */
-      box-shadow: 0 0 15px rgba(0, 255, 255, 0.1);
-      /* Subtle cyan glow */
-      transition: all 0.3s ease;
-      /* Smooth transition for hover */
-    }
+        .list-group-item {
+            background-color: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #f0f0f0;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
 
-    /* MODIFICATION: Hover effect for a brighter glow */
-    .list-group-item:hover {
-      background-color: rgba(255, 255, 255, 0.2);
-      color: white;
-      box-shadow: 0 0 25px rgba(0, 255, 255, 0.4);
-      transform: translateY(-2px);
-    }
+        .list-group-item:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            box-shadow: 0 0 25px rgba(0, 255, 255, 0.4);
+            transform: translateY(-2px);
+        }
 
-    /* MODIFICATION: Styling for the main title */
-    .page-title {
-      color: white;
-      text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
-    }
-  </style>
+        .page-title {
+            color: white;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+        }
+
+        .search-container {
+            max-width: 700px; /* Controls the width of the search bar */
+            margin: 0 auto 2rem auto; /* Centers the search bar and adds space below */
+        }
+
+        .search-input {
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 1.1rem; /* Makes text thicker */
+            padding: 0.75rem 1.25rem; /* Makes the bar broader/taller */
+        }
+
+        .search-input:focus {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-color: #4dd0e1;
+            box-shadow: 0 0 0 0.25rem rgba(77, 208, 225, 0.25);
+            color: white;
+        }
+
+        .search-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+    </style>
 </head>
 
 <body>
   <nav class="navbar navbar-expand-lg navbar-dark bg-transparent mb-4">
     <div class="container">
-      <a class="navbar-brand fw-bold" href="/">Online Judge</a>
+      <a class="navbar-brand" href="{% url 'welcome' %}">
+          <img src="{% static 'images/main_logo.png' %}" alt="Kamand Prompt Logo" height="60">
+      </a>
 
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
         aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -65,11 +84,24 @@
             <a class="nav-link" href="{% url 'leaderboard' %}">Leaderboard</a>
           </li>
           <li class="nav-item">
+            <a class="nav-link" href="{% url 'contest_list' %}">Contests</a>
+          </li>
+          <li class="nav-item">
             <a class="nav-link" href="{% url 'profile_view' request.user.username %}">Profile</a>
           </li>
-          {% if perms.auth.add_contest %}
+          {% if perms.contest.add_contest %}
+              <li class="nav-item dropdown">
+                  <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownContest" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                      Contest Admin
+                  </a>
+                  <ul class="dropdown-menu" aria-labelledby="navbarDropdownContest">
+                      <li><a class="dropdown-item" href="{% url 'create_contest' %}">Create New Contest</a></li>
+                      <li><a class="dropdown-item" href="{% url 'manage_my_contests' %}">Manage My Contests</a></li>
+                  </ul>
+              </li>
+          {% else %}
             <li class="nav-item">
-                <a class="nav-link" href="{% url 'create_contest' %}">Create Contest</a>
+                <a class="nav-link" href="{% url 'request_sub_admin' %}">Host a Contest</a>
             </li>
           {% endif %}
           <li class="nav-item">
@@ -90,6 +122,16 @@
 
   <div class="container">
     <h1 class="text-center page-title mb-4">All Problems</h1>
+
+    <div class="search-container">
+      <form method="get" action="{% url 'problems-list' %}">
+        <div class="input-group">
+          <input type="text" name="q" class="form-control search-input" placeholder="Search for a problem..."
+            value="{{ search_query }}">
+          <button class="btn btn-primary" type="submit">Search</button>
+        </div>
+      </form>
+    </div>
 
     {% if active_contests or upcoming_contests %}
     <div class="card mb-4">

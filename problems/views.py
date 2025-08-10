@@ -3,10 +3,16 @@ from .models import Problem
 from django.contrib.auth.decorators import login_required
 from contest.models import Contest
 from django.utils import timezone
+from django.db.models import Q
 
 def problems_list(request):
-    # Fetch all problems, ordered however you like
-    problems = Problem.objects.all().order_by('created_at')
+    search_query = request.GET.get('q', '')
+
+    problems = Problem.objects.all()
+    if search_query:
+        problems = problems.filter(title__icontains=search_query)
+
+    problems = problems.order_by('created_at')
     
     now = timezone.now()
     active_contests = Contest.objects.filter(start_time__lte=now, end_time__gte=now)
@@ -16,6 +22,7 @@ def problems_list(request):
         'problems': problems,
         'active_contests': active_contests,
         'upcoming_contests': upcoming_contests,
+        'search_query': search_query,
     }
     
     # Pass them into your template
