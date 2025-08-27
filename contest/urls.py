@@ -24,4 +24,5 @@ urlpatterns = [
 
     path('<int:contest_id>/problem/<int:problem_id>/submit/', views.submit_contest_problem, name='submit_contest_problem'),
 
+    path('<int:contest_id>/my-submissions/', views.my_contest_submissions, name='my_contest_submissions'),
 ]

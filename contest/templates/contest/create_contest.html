@@ -1,31 +1,76 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends 'home/base.html' %}
 {% load static %}
-<head>
-    <meta charset="UTF-8">
-    <title>Create a New Contest</title>
-    <link rel="icon" type="image/png" href="{% static 'images/favicon.png' %}">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="bg-light">
+
+{% block title %}Create a New Contest{% endblock %}
+{% block extra_head %}
+    <style>
+        body {
+            background-image: url("{% static 'images/problems_background.png' %}");
+            background-size: cover;
+            background-attachment: fixed;
+            background-color: #0a192f;
+            color: #f0f0f0;
+        }
+        .card {
+            background-color: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .page-title {
+            color: white;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+        }
+        .form-label {
+            color: white;
+        }
+        /* Style form inputs to be more visible on the dark background */
+        .form-control, .form-select {
+            background-color: rgba(0, 0, 0, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .form-control:focus, .form-select:focus {
+            background-color: rgba(0, 0, 0, 0.3);
+            color: white;
+            border-color: #4dd0e1;
+            box-shadow: 0 0 0 0.25rem rgba(77, 208, 225, 0.25);
+        }
+        /* Make the description textarea bigger */
+        #problem-forms-container textarea[name$="description"] {
+            min-height: 150px;
+        }
+
+        textarea[name$="-description"], textarea[name="description"] {
+            min-height: 200px; /* Adjust this value to make it taller or shorter */
+            min-width: 70%; /* Adjust this value to make it wider or narrower */
+            max-width: 100%; /* Ensure it doesn't exceed the container width */
+            resize: both; /* Allow both horizontal and vertical resizing */
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 10px;
+            border-radius: 5px;
+        }
+    </style>
+{% endblock %}
+{% block content %}
     <div class="container py-5">
-        <h1>Create a New Contest</h1>
+        <h1 class="page-title">Create a New Contest</h1>
         <p>Fill out the details below to set up your contest and add problems.</p>
 
         <form method="post" id="contest-form">
             {% csrf_token %}
-
             {{ problem_formset.management_form }}
 
             <div class="card mb-4">
-                <div class="card-header">Contest Details</div>
+                <div class="card-header fw-bold">Contest Details</div>
                 <div class="card-body">
                     {{ contest_form.as_p }}
+                    <p>Time Zone (UTC)</p>
                 </div>
             </div>
 
             <div id="problem-forms-container">
-                <h3 class="mb-3">Contest Problems</h3>
+                <h3 class="mb-3 page-title">Contest Problems</h3>
                 {% for form in problem_formset %}
                     <div class="card problem-form mb-3">
                         <div class="card-body">
@@ -46,6 +91,12 @@
         </form>
     </div>
 
+    <template id="empty-form-template">
+        {{ problem_formset.empty_form.as_p }}
+    </template>
+{% endblock %}
+    
+{% block extra_scripts %}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const container = document.getElementById('problem-forms-container');
@@ -73,9 +124,4 @@
             });
         });
     </script>
-
-    <template id="empty-form-template">
-        {{ problem_formset.empty_form.as_p }}
-    </template>
-</body>
-</html>
+{% endblock %}

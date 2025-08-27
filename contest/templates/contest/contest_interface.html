@@ -1,30 +1,21 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends 'home/base.html' %}
 {% load static %}
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ contest.title }} - Compete</title>
-    <link rel="icon" type="image/png" href="{% static 'images/favicon.png' %}">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.43.2/ace.js"></script>
+{% load contest_extras %}
+
+{% block title %}Contest - {{ contest.title }}{% endblock %}
+
+{% block extra_head %}
     <style>
-        body, html { height: 100%; }
-        body {
-            background-image: url("{% static 'images/problems_background.png' %}");
-            background-size: cover;
-            background-attachment: fixed;
-            background-color: #0a192f;
-            color: #f0f0f0;
-        }
         .main-container {
             display: flex;
-            height: calc(100vh - 56px); /* Full height minus navbar */
+            height: calc(100vh - 76px); /* Adjusted for navbar height */
         }
-        .problem-list {
-            flex: 0 0 300px;
+        .side-panel {
+            flex: 0 0 350px;
             background-color: rgba(0, 0, 0, 0.3);
             padding: 1rem;
+            display: flex;
+            flex-direction: column;
             overflow-y: auto;
         }
         .problem-view {
@@ -39,103 +30,160 @@
         }
         .problem-description { display: none; }
         .problem-description.active { display: block; }
+        p, .card-title, .form-label, .list-group-item h6 { color: #f0f0f0; }
+        .list-group-item.active {
+            background-color: rgba(0, 255, 255, 0.2) !important;
+            border-color: rgba(0, 255, 255, 0.3) !important;
+        }
     </style>
-</head>
-<body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-transparent">
-        </nav>
+{% endblock %}
 
-    <div class="main-container">
-        <div class="problem-list">
-            <h4 class="mb-3">Problems</h4>
-            <div class="list-group">
-                {% for problem in problems %}
-                <a href="#" class="list-group-item list-group-item-action bg-transparent text-light" data-problem-id="{{ problem.id }}">
-                    {{ problem.title }}
-                </a>
-                {% endfor %}
-            </div>
+{% block navbar %}
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
+        <div class="container">
+            <span class="navbar-brand fw-bold">{{ contest.title }}</span>
+            <a href="{% url 'my_contest_submissions' contest.id %}" class="nav-link text-light me-3">My Submissions</a>
+            <span class="navbar-text ms-auto me-3" id="contest-timer"></span>
+            <a href="{% url 'contest_list' %}" class="btn btn-sm btn-outline-light">Exit Contest</a>
         </div>
+    </nav>
+{% endblock %}
 
-        <div class="problem-view">
+{% block content %}
+<div class="main-container">
+    <div class="side-panel">
+        <h4 class="mb-3">Problems</h4>
+        <div class="list-group problem-list-group">
             {% for problem in problems %}
-            <div id="problem-{{ problem.id }}" class="problem-description">
-                <div class="card">
-                    <div class="card-body">
-                        <h2 class="card-title">{{ problem.title }}</h2>
-                        <span class="badge 
-                            {% if problem.difficulty == 'Easy' %}bg-success
-                            {% elif problem.difficulty == 'Medium' %}bg-warning text-dark
-                            {% else %}bg-danger{% endif %}">
-                            {{ problem.difficulty }}
-                        </span>
-                        <hr style="color: rgba(255,255,255,0.3);">
-                        <p>{{ problem.description|linebreaks }}</p>
-                    </div>
-                </div>
-
-                <div class="card mt-3">
-                    <div class="card-body">
-                        <form method="post" action="{% url 'submit_contest_problem' contest.id problem.id %}">
-                            {% csrf_token %}
-                            <div class="mb-3">
-                                <label for="language-{{ problem.id }}" class="form-label">Language</label>
-                                <select id="language-{{ problem.id }}" name="language" class="form-select">
-                                    <option value="py">Python</option>
-                                    <option value="cpp">C++</option>
-                                    <option value="java">Java</option>
-                                </select>
-                            </div>
-                            <div id="editor-{{ problem.id }}" class="code-editor" style="height: 300px; border-radius: 4px;"></div>
-                            <textarea name="code" class="hidden-code" hidden></textarea>
-                            <button type="submit" class="btn btn-primary mt-3">Submit</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
+            <a href="#" class="list-group-item list-group-item-action bg-transparent text-light" data-problem-id="{{ problem.id }}">
+                {{ problem.title }}
+            </a>
             {% endfor %}
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <div class="problem-view">
+        {% for problem in problems %}
+        <div id="problem-{{ problem.id }}" class="problem-description">
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h2 class="card-title">{{ problem.title }}</h2>
+                    <span class="badge {% if problem.difficulty == 'Easy' %}bg-success{% elif problem.difficulty == 'Medium' %}bg-warning text-dark{% else %}bg-danger{% endif %}">{{ problem.difficulty }}</span>
+                    <hr style="color: rgba(255,255,255,0.3);">
+                    <p>{{ problem.description|linebreaks }}</p>
+                </div>
+            </div>
+            <div class="card mt-3">
+                <div class="card-body">
+                    <form method="post" action="{% url 'submit_contest_problem' contest.id problem.id %}" class="submit-form">
+                        {% csrf_token %}
+                        <div class="col-md-4 mb-3">
+                            <label for="language-{{ problem.id }}" class="form-label">Language</label>
+                            <select id="language-{{ problem.id }}" name="language" class="form-select language-selector">
+                                <option value="py">Python</option>
+                                <option value="cpp">C++</option>
+                            </select>
+                        </div>
+                        <div id="editor-{{ problem.id }}" class="code-editor" style="height: 450px; border-radius: 4px;"></div>
+                        <textarea name="code" class="hidden-code" hidden></textarea>
+                        <button type="submit" class="btn btn-primary mt-3">Submit Solution</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.43.2/ace.js"></script>
     <script>
+        const boilerplates = {
+            py: `{{ boilerplates.py|escapejs }}`,
+            cpp: `{{ boilerplates.cpp|escapejs }}`,
+        };
+    </script>
+    <script>
+        // MODIFICATION: All JavaScript is now inside a single, clean block
         document.addEventListener('DOMContentLoaded', function() {
-            const problemLinks = document.querySelectorAll('.problem-list a');
+            // Timer Logic
+            const contestEndTime = new Date("{{ contest.end_time.isoformat }}").getTime();
+            const timerElement = document.getElementById('contest-timer');
+            if (timerElement) {
+                function updateTimer() {
+                    const now = new Date().getTime();
+                    const distance = contestEndTime - now;
+                    if (distance < 0) {
+                        timerElement.innerHTML = "Contest Ended";
+                        clearInterval(timerInterval);
+                        return;
+                    }
+                    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                    timerElement.innerHTML = `Time Left: ${hours}h ${minutes}m ${seconds}s`;
+                }
+                const timerInterval = setInterval(updateTimer, 1000);
+                updateTimer();
+            }
+
+            // Editor and Interface Logic
+            const problemLinks = document.querySelectorAll('.problem-list-group a');
             const problemDescriptions = document.querySelectorAll('.problem-description');
             const editors = {};
 
-            // Initialize all Ace editors
             document.querySelectorAll('.code-editor').forEach(editorDiv => {
                 const editor = ace.edit(editorDiv.id);
                 editor.setTheme("ace/theme/monokai");
-                editor.session.setMode("ace/mode/python");
                 editors[editorDiv.id] = editor;
             });
+
+            function showProblem(problemId) {
+                problemLinks.forEach(link => link.classList.toggle('active', link.dataset.problemId === problemId));
+                problemDescriptions.forEach(desc => desc.classList.toggle('active', desc.id === `problem-${problemId}`));
+                
+                const languageSelector = document.getElementById(`language-${problemId}`);
+                const editor = editors[`editor-${problemId}`];
+                const lang = languageSelector.value;
+                let mode = 'ace/mode/python';
+                if (lang === 'cpp') mode = 'ace/mode/c_cpp';
+                
+                editor.session.setMode(mode);
+                editor.session.setValue(boilerplates[lang] || '', -1);
+            }
 
             problemLinks.forEach(link => {
                 link.addEventListener('click', function(e) {
                     e.preventDefault();
-                    const problemId = this.dataset.problemId;
-
-                    // Hide all descriptions
-                    problemDescriptions.forEach(desc => desc.classList.remove('active'));
-                    // Show the selected one
-                    document.getElementById(`problem-${problemId}`).classList.add('active');
-
-                    // Update the code in the hidden textarea before form submission
-                    const form = document.querySelector(`#problem-${problemId} form`);
-                    form.addEventListener('submit', function() {
-                        const editor = editors[`editor-${problemId}`];
-                        this.querySelector('.hidden-code').value = editor.getValue();
-                    });
+                    showProblem(this.dataset.problemId);
                 });
             });
 
-            // Show the first problem by default
+            document.querySelectorAll('.language-selector').forEach(selector => {
+                selector.addEventListener('change', function() {
+                    const problemId = this.id.split('-')[1];
+                    const editor = editors[`editor-${problemId}`];
+                    const lang = this.value;
+                    let mode = 'ace/mode/python';
+                    if (lang === 'cpp') mode = 'ace/mode/c_cpp';
+                    
+                    editor.session.setMode(mode);
+                    editor.session.setValue(boilerplates[lang] || '', -1);
+                });
+            });
+
             if (problemLinks.length > 0) {
-                problemLinks[0].click();
+                showProblem(problemLinks[0].dataset.problemId);
             }
+
+            document.querySelectorAll('.submit-form').forEach(form => {
+                form.addEventListener('submit', function() {
+                    const problemId = this.action.match(/\/problem\/(\d+)\/submit/)[1];
+                    const editor = editors[`editor-${problemId}`];
+                    this.querySelector('.hidden-code').value = editor.getValue();
+                });
+            });
         });
     </script>
-</body>
-</html>
+{% endblock %}

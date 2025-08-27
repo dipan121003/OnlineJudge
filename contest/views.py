@@ -118,10 +118,16 @@ def contest_interface(request, contest_id):
 
     # Get all problems for this contest
     problems = contest.problems.all()
+    
+    boilerplates = {
+        'py': 'def solve():\n    # Your code here\n\n    pass\n\nsolve()',
+        'cpp': '#include <iostream>\n\nint main() {\n    // Your code here\n\n    return 0;\n}',
+    }
 
     context = {
         'contest': contest,
         'problems': problems,
+        'boilerplates': boilerplates,
     }
     return render(request, 'contest/contest_interface.html', context)
 
@@ -197,7 +203,9 @@ def manage_contest_detail(request, contest_id):
         # This logic handles adding/editing test cases for a specific problem
         problem_id = request.POST.get('problem_id')
         problem = get_object_or_404(ContestProblem, id=problem_id, contest=contest)
-        formset = TestCaseFormSet(request.POST, queryset=problem.test_cases.all())
+        
+        formset_prefix = f'testcases-{problem.id}'
+        formset = TestCaseFormSet(request.POST, queryset=problem.test_cases.all(), prefix=formset_prefix)
 
         if formset.is_valid():
             instances = formset.save(commit=False)
@@ -215,10 +223,26 @@ def manage_contest_detail(request, contest_id):
     # Prepare a dictionary of formsets, one for each problem
     problem_formsets = {}
     for problem in contest.problems.all():
-        problem_formsets[problem.id] = TestCaseFormSet(queryset=problem.test_cases.all())
+        formset_prefix = f'testcases-{problem.id}'
+        problem_formsets[problem.id] = TestCaseFormSet(queryset=problem.test_cases.all(), prefix=formset_prefix)
 
     context = {
         'contest': contest,
         'problem_formsets': problem_formsets,
     }
     return render(request, 'contest/manage_contest_detail.html', context)
+
+def my_contest_submissions(request, contest_id):
+    contest = get_object_or_404(Contest, id=contest_id)
+
+    # Get all of the current user's submissions for this contest
+    submissions = ContestSubmission.objects.filter(
+        user=request.user,
+        contest=contest
+    ).order_by('-submitted_at')
+
+    context = {
+        'contest': contest,
+        'submissions': submissions,
+    }
+    return render(request, 'contest/contest_submissions.html', context)

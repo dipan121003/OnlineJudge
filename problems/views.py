@@ -32,6 +32,11 @@ def problems_list(request):
 def problem_detail(request, problem_id):
     problem = get_object_or_404(Problem, id=problem_id)
     
+    boilerplates = {
+        'py': "# Your Python code here\n\ndef solve():\n    # Read input and solve the problem\n\n    pass\n\nsolve()\n",
+        'cpp': "#include <iostream>\nusing namespace std;\n\n int main() {\n    // Your C++ code here\n\n    return 0;\n}\n"
+    }
+    
     submitted_code = ''
     submitted_language = 'py' 
     submitted_input = ''
@@ -39,11 +44,14 @@ def problem_detail(request, problem_id):
         submitted_code = request.POST.get('code', '')
         submitted_language = request.POST.get('language', 'py')
         submitted_input = request.POST.get('input_data', '')
+    else:
+        submitted_code = boilerplates.get(submitted_language, '')
 
     context = {
         'problem': problem,
         'submitted_code': submitted_code,
         'submitted_language': submitted_language,
         'submitted_input': submitted_input,
+        'boilerplates': boilerplates,
     }
     return render(request, 'problem_detail.html', context)

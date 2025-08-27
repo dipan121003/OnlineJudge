@@ -2,7 +2,7 @@
 FROM python:3.11-slim
 
 # Install compilers
-RUN apt-get update && apt-get install -y g++ default-jdk
+RUN apt-get update && apt-get install -y g++
 
 # Create a secure, non-root user to run the code
 RUN useradd -ms /bin/bash sandboxuser

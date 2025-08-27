@@ -1,61 +1,114 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends 'home/base.html' %}
 {% load static %}
-{% load contest_extras %} <head>
-    <meta charset="UTF-8">
-    <title>Manage {{ contest.title }}</title>
-    <link rel="icon" type="image/png" href="{% static 'images/favicon.png' %}">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    </head>
-<body class="bg-light">
+{% load contest_extras %}
+
+{% block title %}Manage Contest: {{ contest.title }}{% endblock %}
+{% block extra_head %}
+    <style>
+        body {
+            background-image: url("{% static 'images/problems_background.png' %}");
+            background-size: cover;
+            background-attachment: fixed;
+            background-color: #0a192f;
+            color: #f0f0f0;
+        }
+        .card {
+            background-color: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .page-title { color: white; text-shadow: 0 0 10px rgba(255, 255, 255, 0.3); }
+        .form-label, .form-check-label { color: white; }
+        .form-control {
+            background-color: rgba(0, 0, 0, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .form-control:focus {
+            background-color: rgba(0, 0, 0, 0.3);
+            color: white;
+            border-color: #4dd0e1;
+            box-shadow: 0 0 0 0.25rem rgba(77, 208, 225, 0.25);
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
     <div class="container py-5">
-        <h1>Manage Contest: {{ contest.title }}</h1>
+        <h1 class="page-title">Manage Contest: {{ contest.title }}</h1>
         <p>Add, edit, or remove test cases for each problem in your contest.</p>
 
         {% for problem in contest.problems.all %}
             <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0">Problem: {{ problem.title }}</h5>
-                </div>
+                <div class="card-header"><h5 class="mb-0" style="color: white;">Problem: {{ problem.title }}</h5></div>
                 <div class="card-body">
+                    {% with formset=problem_formsets|get_item:problem.id %}
                     <form method="post">
                         {% csrf_token %}
                         <input type="hidden" name="problem_id" value="{{ problem.id }}">
-
-                        {% with formset=problem_formsets|get_item:problem.id %}
-                            {{ formset.management_form }}
-
+                        {{ formset.management_form }}
+                        
+                        <div id="testcase-forms-container-{{ problem.id }}">
                             <div class="row fw-bold mb-2 d-none d-md-flex">
                                 <div class="col-md-5">Input Data</div>
                                 <div class="col-md-5">Output Data</div>
                                 <div class="col-md-2">Delete</div>
                             </div>
-
                             {% for form in formset %}
-                                <div class="row align-items-center mb-3">
-                                    <div class="col-md-5">
-                                        <label class="form-label d-md-none">Input Data</label>
-                                        {{ form.input_data }}
-                                    </div>
-                                    <div class="col-md-5">
-                                        <label class="form-label d-md-none">Output Data</label>
-                                        {{ form.output_data }}
-                                    </div>
-                                    <div class="col-md-2 text-center">
-                                        {% if form.instance.pk %}{{ form.DELETE }}{% endif %}
-                                    </div>
+                                <div class="row align-items-center mb-3 testcase-form">
+                                    <div class="col-md-5">{{ form.input_data }}</div>
+                                    <div class="col-md-5">{{ form.output_data }}</div>
+                                    <div class="col-md-2 text-center">{% if form.instance.pk %}{{ form.DELETE }}{% endif %}</div>
                                 </div>
                             {% endfor %}
-                        {% endwith %}
-
-                        <button type="submit" class="btn btn-primary btn-sm mt-3">Save Test Cases for: {{ problem.title }}</button>
+                        </div>
+                        
+                        <button type="button" class="btn btn-secondary btn-sm add-testcase-btn" data-problem-id="{{ problem.id }}" data-prefix="{{ formset.prefix }}">Add Test Case</button>
+                        <button type="submit" class="btn btn-primary mt-3">Save Test Cases for: {{ problem.title }}</button>
+                        
+                        <template id="empty-form-template-{{ problem.id }}">
+                            <div class="row align-items-center mb-3 testcase-form">
+                                <div class="col-md-5">{{ formset.empty_form.input_data }}</div>
+                                <div class="col-md-5">{{ formset.empty_form.output_data }}</div>
+                                <div class="col-md-2 text-center">{{ formset.empty_form.DELETE }}</div>
+                            </div>
+                        </template>
                     </form>
+                    {% endwith %}
                 </div>
             </div>
         {% endfor %}
         <a href="{% url 'manage_my_contests' %}" class="btn btn-secondary mt-3">Back to My Contests</a>
     </div>
-</body>
-</html>
+{% endblock %}
 
-    
+{% block extra_scripts %}
+    <script>
+        document.querySelectorAll('.add-testcase-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const problemId = this.dataset.problemId;
+                const prefix = this.dataset.prefix; // Get the unique prefix
+                
+                const container = document.getElementById(`testcase-forms-container-${problemId}`);
+                const totalFormsInput = document.getElementById(`id_${prefix}-TOTAL_FORMS`);
+                const emptyFormTemplate = document.getElementById(`empty-form-template-${problemId}`);
+                
+                let formCount = parseInt(totalFormsInput.value);
+                
+                // Clone the template's content
+                const newFormNode = emptyFormTemplate.content.cloneNode(true);
+                
+                // Update the IDs and names of the new form's inputs
+                newFormNode.querySelectorAll('textarea, input').forEach(input => {
+                    input.name = input.name.replace(/__prefix__/g, formCount);
+                    input.id = input.id.replace(/__prefix__/g, formCount);
+                });
+                
+                container.appendChild(newFormNode);
+                
+                // Increment and update the total form count
+                totalFormsInput.value = ++formCount;
+            });
+        });
+    </script>
+{% endblock %}

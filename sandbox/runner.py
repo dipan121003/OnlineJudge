@@ -16,8 +16,6 @@ def main():
             filename = "main.py"
         elif language == "cpp":
             filename = "main.cpp"
-        elif language == "java":
-            filename = "Main.java"
         else:
             print("Unsupported language.", file=sys.stderr)
             return
@@ -30,10 +28,6 @@ def main():
             compile_cmd = ['g++', filename, '-o', 'main']
             subprocess.run(compile_cmd, check=True, capture_output=True, text=True)
             command = ['./main']
-        elif language == "java":
-            compile_cmd = ['javac', filename]
-            subprocess.run(compile_cmd, check=True, capture_output=True, text=True)
-            command = ['java', 'Main']
 
         # Run the compiled/interpreted code
         result = subprocess.run(command, input=input_data, capture_output=True, text=True, timeout=10)

@@ -1,11 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends 'home/base.html'%}
 {% load static %}
-<head>
-    <meta charset="UTF-8">
-    <title>Manage My Contests</title>
-    <link rel="icon" type="image/png" href="{% static 'images/favicon.png' %}">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+{% block title %}Manage My Contests{% endblock %}
+{% block extra_head %}
     <style>
         body {
             background-image: url("{% static 'images/problems_background.png' %}");
@@ -25,8 +22,9 @@
             text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
         }
     </style>
-</head>
-<body>
+{% endblock %}
+
+{% block content %}
     <div class="container py-5">
         <h1 class="page-title">Manage My Contests</h1>
         <p>Select a contest below to add or edit its problems and test cases.</p>
@@ -46,5 +44,4 @@
             {% endfor %}
         </div>
     </div>
-</body>
-</html>
+{% endblock %}

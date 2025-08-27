@@ -1,12 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends 'home/base.html' %}
 {% load static %}
-<head>
-    <meta charset="UTF-8">
-    <title>Execution Result</title>
-    <link rel="icon" type="image/png" href="{% static 'images/favicon.png' %}">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
+{% block title %}Execution Result{% endblock %}
+{% block extra_head %}
     <style>
         body {
             background-image: url("{% static 'images/problems_background.png' %}");
@@ -32,74 +28,39 @@
             text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
         }
     </style>
-</head>
+{% endblock %}
 
-<body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-transparent mb-4">
-        <div class="container">
-            <a class="navbar-brand" href="{% url 'welcome' %}">
-                <img src="{% static 'images/main_logo.png' %}" alt="Kamand Prompt Logo" height="60">
-            </a>
-
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    {% if request.user.is_authenticated %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'problems-list' %}">Problems</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'logout-user' %}">Logout</a>
-                    </li>
-                    {% else %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'login-user' %}">Login</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'register-user' %}">Register</a>
-                    </li>
-                    {% endif %}
-                </ul>
+{% block content %}
+    <div class="container py-5">
+        <h1 class="mb-4 page-title">Execution Result</h1>
+    
+        <div class="card mt-4">
+            <div class="card-header">Your Code</div>
+            <div class="card-body bg-dark text-light p-3">
+                <pre class="m-0"><code>{{ submission.code }}</code></pre>
             </div>
         </div>
-    </nav>
-
-<div class="container py-5">
-    <h1 class="mb-4 page-title">Execution Result</h1>
-
-    <div class="card mt-4">
-        <div class="card-header">Your Code</div>
-        <div class="card-body bg-dark text-light p-3">
-            <pre class="m-0"><code>{{ submission.code }}</code></pre>
+    
+        <div class="card mt-4">
+            <div class="card-header">Custom Input</div>
+            <div class="card-body p-3">
+                <pre class="m-0">{{ submission.input_data }}</pre>
+            </div>
         </div>
-    </div>
-
-    <div class="card mt-4">
-        <div class="card-header">Custom Input</div>
-        <div class="card-body p-3">
-            <pre class="m-0">{{ submission.input_data }}</pre>
+    
+        <div class="card mt-4">
+            <div class="card-header fw-bold">Output</div>
+            <div class="card-body p-3">
+                <pre class="m-0">{{ submission.output_data }}</pre>
+            </div>
         </div>
+    
+        <!-- <form action="{% url 'problem-detail' problem.id %}" method="POST" class="mt-4">
+            {% csrf_token %}
+            <input type="hidden" name="code" value="{{ submission.code|escape }}">
+            <input type="hidden" name="language" value="{{ submission.language }}">
+            <input type="hidden" name="input_data" value="{{ submission.input_data|escape }}">
+            <button type="submit" class="btn btn-primary">Go Back</button>
+        </form> -->
     </div>
-
-    <div class="card mt-4">
-        <div class="card-header fw-bold">Output</div>
-        <div class="card-body p-3">
-            <pre class="m-0">{{ submission.output_data }}</pre>
-        </div>
-    </div>
-
-    <form action="{% url 'problem-detail' problem.id %}" method="POST" class="mt-4">
-        {% csrf_token %}
-        <input type="hidden" name="code" value="{{ submission.code|escape }}">
-        <input type="hidden" name="language" value="{{ submission.language }}">
-        <input type="hidden" name="input_data" value="{{ submission.input_data|escape }}">
-        <button type="submit" class="btn btn-primary">Go Back</button>
-    </form>
-</div>
-
-</body>
-</html>
+{% endblock %}
