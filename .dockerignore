@@ -10,3 +10,4 @@ __pycache__/
 # Docker files
 Dockerfile
 docker-compose.yml
+db.sqlite3

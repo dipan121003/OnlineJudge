@@ -12,6 +12,25 @@
       /* A dark blue fallback color */
     }
 
+    .split-container {
+      display: flex;
+      height: calc(100vh - 76px); /* Full height minus navbar */
+      width: 100%;
+    }
+    .split {
+      padding: 1rem;
+      overflow-y: auto;
+    }
+    .gutter {
+      background-color: rgba(0, 255, 255, 0.2);
+      background-repeat: no-repeat;
+      background-position: 50%;
+    } 
+    .gutter.gutter-horizontal {
+      cursor: col-resize;
+      background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==');
+    }
+
     .card {
       background-color: rgba(255, 255, 255, 0.1);
       backdrop-filter: blur(10px);
@@ -43,79 +62,91 @@
 {% endblock %}
 
 {% block content %}
-  <div class="container py-5">
-    <div class="mb-4">
-      <h1 class="display-5 fw-bold page-title">{{ problem.title }}</h1>
-      <p class="text-muted">
-        Difficulty:
-        <span
-          class="badge {% if problem.difficulty == 'Easy' %}bg-success{% elif problem.difficulty == 'Medium' %}bg-warning text-dark{% else %}bg-danger{% endif %}">
-          {{ problem.difficulty }}
-        </span>
-      </p>
-      <hr style="color: #f0f0f0;">
-    </div>
-
-    <div class="card mb-5">
-      <div class="card-body">
-        <h5 class="card-title">Problem Description</h5>
-        <p class="card-text" style="white-space: pre-line;">
-          {{ problem.description }}
+<div class="split-container">
+    <div id="problem-panel" class="split">
+        <h1 class="display-5 fw-bold page-title">{{ problem.title }}</h1>
+        <p class="text-muted">
+            Difficulty:
+            <span class="badge {% if problem.difficulty == 'Easy' %}bg-success{% elif problem.difficulty == 'Medium' %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                {{ problem.difficulty }}
+            </span>
         </p>
-      </div>
+        <hr style="color: #f0f0f0;">
+
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title" style="color: white;">Problem Description</h5>
+                <p class="card-text" style="white-space: pre-line;">
+                    {{ problem.description }}
+                </p>
+            </div>
+        </div>
     </div>
 
-    <div class="card mb-4">
-      <div class="card-body">
-        <h5 class="card-title mb-3">Write &amp; Run Your Code</h5>
+    <div id="editor-panel" class="split">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title mb-3" style="color: white;">Write &amp; Run Your Code</h5>
 
-        <div class="row g-3 mb-3">
-          <div class="col-md-4">
-            <label for="language" class="form-label">Language</label>
-            <select id="language" class="form-select">
-              <option value="py" {% if submitted_language == 'py' %}selected{% endif %}>Python</option>
-              <option value="cpp" {% if submitted_language == 'cpp' %}selected{% endif %}>C++</option>
-            </select>
-          </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <label for="language" class="form-label" style="color: white;">Language</label>
+                        <select id="language" class="form-select">
+                            <option value="py" {% if submitted_language == 'py' %}selected{% endif %}>Python</option>
+                            <option value="cpp" {% if submitted_language == 'cpp' %}selected{% endif %}>C++</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="code-editor" style="height:400px; width:100%;"></div>
+
+                <form method="post" action="{% url 'run_code' %}" id="run-form" class="mt-3">
+                    {% csrf_token %}
+                    <input type="hidden" name="problem" value="{{ problem.id }}">
+                    <label for="display-input" class="form-label" style="color: white;">Custom Input</label>
+                    <textarea id="display-input" name="input_data" class="form-control font-monospace" rows="4">{{ submitted_input }}</textarea>
+                    <textarea name="code" class="hidden-code" hidden></textarea>
+                    <input type="hidden" name="language" class="hidden-language">
+                </form>
+
+                <form method="post" action="{% url 'submit_solution' problem.id %}" id="submit-form">
+                    {% csrf_token %}
+                    <textarea name="code" class="hidden-code" hidden></textarea>
+                    <input type="hidden" name="language" class="hidden-language">
+                </form>
+
+                <form method="post" action="{% url 'get_ai_suggestion' problem.id %}" id="ai-form" class="mt-4 border-top pt-3"
+                    style="border-color: rgba(255,255,255,0.2) !important;">
+                    {% csrf_token %}
+                    <label for="user-question" class="form-label fw-bold" style="color: white;">Ask AI for a Hint</label>
+                    <textarea id="user-question" name="user_question" class="form-control" rows="2"
+                        placeholder="e.g., 'Is my logic correct?' or 'How can I optimize this?'"></textarea>
+                    <textarea name="code" class="hidden-code" hidden></textarea>
+                    <input type="hidden" name="language" class="hidden-language">
+                </form>
+
+                <div class="d-flex gap-2 mt-3">
+                    <button type="submit" form="run-form" class="btn btn-secondary">Run Code</button>
+                    <button type="submit" form="submit-form" class="btn btn-primary">Submit Solution</button>
+                    <button type="submit" form="ai-form" class="btn btn-info">Get AI Suggestion</button>
+                </div>
+            </div>
         </div>
-        <div id="code-editor" style="height:400px; width:100%;"></div>
-
-        <form method="post" action="{% url 'run_code' %}" id="run-form" class="mt-3">
-          {% csrf_token %}
-          <input type="hidden" name="problem" value="{{ problem.id }}">
-          <label for="display-input" class="form-label">Custom Input</label>
-          <textarea id="display-input" name="input_data" class="form-control font-monospace" rows="4">{{ submitted_input }}</textarea>
-          <textarea name="code" class="hidden-code" hidden></textarea>
-          <input type="hidden" name="language" class="hidden-language">
-        </form>
-
-        <form method="post" action="{% url 'submit_solution' problem.id %}" id="submit-form">
-          {% csrf_token %}
-          <textarea name="code" class="hidden-code" hidden></textarea>
-          <input type="hidden" name="language" class="hidden-language">
-        </form>
-
-        <form method="post" action="{% url 'get_ai_suggestion' problem.id %}" id="ai-form" class="mt-4 border-top pt-3"
-          style="border-color: rgba(255,255,255,0.2) !important;">
-          {% csrf_token %}
-          <label for="user-question" class="form-label fw-bold">Ask AI for a Hint</label>
-          <textarea id="user-question" name="user_question" class="form-control" rows="2"
-            placeholder="e.g., 'Is my logic correct?' or 'How can I optimize this?'"></textarea>
-          <textarea name="code" class="hidden-code" hidden></textarea>
-          <input type="hidden" name="language" class="hidden-language">
-        </form>
-
-        <div class="d-flex gap-2 mt-3">
-          <button type="submit" form="run-form" class="btn btn-secondary">Run Code</button>
-          <button type="submit" form="submit-form" class="btn btn-primary">Submit Solution</button>
-          <button type="submit" form="ai-form" class="btn btn-info">Get AI Suggestion</button>
-        </div>
-      </div>
     </div>
-  </div>
+</div>
 {% endblock %}
 
 {% block extra_scripts %}
+  <script src="https://unpkg.com/split.js/dist/split.min.js"></script>
+
+  <script>
+    Split(['#problem-panel', '#editor-panel'], {
+      sizes: [50, 50],
+      gutterSize: 8,
+      minSize: 300,
+      cursor: 'col-resize',
+    });
+  </script>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.43.2/ace.js"></script>
 
   <script>
