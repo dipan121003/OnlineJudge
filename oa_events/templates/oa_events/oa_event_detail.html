@@ -1,0 +1,350 @@
+{% extends 'home/base.html' %}
+{% load static %}
+{% load humanize %} {# For 'timesince' filter #}
+
+{% block title %}{{ event.title }} – {{ event.company.name }} OA{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex align-items-center mb-4">
+        {% if event.company.logo %}
+            <img src="{{ event.company.logo.url }}" alt="{{ event.company.name }} Logo" class="me-3 company-logo-lg">
+        {% else %}
+            <div class="me-3 company-logo-placeholder-lg">{{ event.company.name|first }}</div>
+        {% endif %}
+        <div>
+            <h1 class="display-5 fw-bold page-title mb-0">{{ event.title }}</h1>
+            <p class="text-muted lead mb-0">
+                <i class="far fa-building me-1"></i> {{ event.company.name }}
+                <span class="mx-2">|</span>
+                <i class="far fa-calendar-alt me-1"></i> {{ event.event_date|date:"F d, Y" }}
+            </p>
+        </div>
+    </div>
+
+    {% if event.description %}
+        <div class="card custom-card mb-4">
+            <div class="card-body">
+                <h5 class="card-title text-white">Event Overview</h5>
+                <p class="card-text">{{ event.description }}</p>
+            </div>
+        </div>
+    {% endif %}
+
+    <h2 class="h4 text-white mb-3 mt-5">Problems in this Round</h2>
+    {% if event.problems.all %}
+        <div class="list-group mb-5">
+            {% for problem in event.problems.all %}
+                <a href="{% url 'problem-detail' problem.id %}" class="list-group-item list-group-item-action custom-list-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1 text-white">{{ problem.title }}</h6>
+                        <small class="text-muted">Difficulty: <span class="badge {% if problem.difficulty == 'Easy' %}bg-success{% elif problem.difficulty == 'Medium' %}bg-warning text-dark{% else %}bg-danger{% endif %}">{{ problem.difficulty }}</span></small>
+                    </div>
+                    <i class="fas fa-chevron-right text-muted"></i>
+                </a>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-warning text-center" role="alert">
+            No problems have been linked to this event yet.
+        </div>
+    {% endif %}
+
+    {% if event.ai_summary %}
+        <h2 class="h4 text-white mb-3 mt-5">Key Concepts & Discussion Summary</h2>
+        <div class="card custom-card mb-5">
+            <div class="card-body">
+                <p class="card-text" style="white-space: pre-wrap;">{{ event.ai_summary }}</p>
+            </div>
+        </div>
+    {% endif %}
+
+
+    <h2 class="h4 text-white mb-3 mt-5">Discussion</h2>
+    <div class="card custom-card mb-5">
+        <div class="card-body">
+            <div id="comments-list">
+                {% if comments %}
+                    {% for comment in comments %}
+                        {% include 'oa_events/_comment.html' %}
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted text-center" id="no-comments-message">No one has commented yet. Be the first!</p>
+                {% endif %}
+            </div>
+
+            {% if user.is_authenticated %}
+                <hr class="my-4" style="border-color: rgba(255,255,255,0.1);">
+                <form id="comment-form" method="post" action="{% url 'oa_events:oa_event_detail' event.id %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="id_comment_content" class="form-label text-white">Post a Comment</label>
+                        <textarea class="form-control" id="id_comment_content" name="comment_content" rows="3"
+                                  placeholder="Share your thoughts or strategies..."
+                                  minlength="{{ min_comment_length }}"
+                                  maxlength="{{ max_comment_length }}"
+                                  {% if user_comments_count >= max_comments_per_event_per_user %}disabled{% endif %}></textarea>
+                        <div class="d-flex justify-content-between mt-1">
+                            <small class="text-muted" id="char-count">
+                                <span id="current-chars">0</span> / {{ max_comment_length }} characters
+                            </small>
+                            <small class="text-muted" id="comment-limit-text">
+                                You have <span id="remaining-comments">{{ remaining_comments_count }}</span> comments remaining.
+                            </small>
+                        </div>
+                    </div>
+                    {% if comment_error %}
+                        <div class="alert alert-danger" role="alert">{{ comment_error }}</div>
+                    {% endif %}
+                    <button type="submit" class="btn btn-primary" id="post-comment-btn"
+                            {% if user_comments_count >= max_comments_per_event_per_user %}disabled{% endif %}>Post Comment</button>
+                </form>
+            {% else %}
+                <p class="text-center text-muted mt-4">
+                    <a href="{% url 'login' %}" class="text-info">Log in</a> to join the discussion.
+                </p>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+
+<style>
+    /* Specific styles for OA Event Detail page */
+    .company-logo-lg {
+        width: 80px;
+        height: 80px;
+        object-fit: contain;
+        border-radius: 10px;
+        background-color: rgba(255,255,255,0.1);
+        padding: 10px;
+    }
+
+    .company-logo-placeholder-lg {
+        width: 80px;
+        height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #007bff; /* A default color */
+        color: white;
+        font-weight: bold;
+        font-size: 2rem;
+        border-radius: 10px;
+    }
+
+    .custom-list-item {
+        background-color: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.1);
+        color: #f8f9fa;
+        transition: background-color 0.2s ease-in-out;
+    }
+
+    .custom-list-item:hover {
+        background-color: rgba(255, 255, 255, 0.15);
+    }
+
+    /* Styles for the comment form and comments */
+    .card.custom-card { /* This targets the outer discussion card */
+        background-color: rgba(20, 20, 20, 0.95); /* Even darker, more opaque for the whole discussion section */
+        border: 1px solid rgba(70, 70, 70, 0.5);
+        color: #ffffff; /* Default text color inside this card */
+        position: relative;
+        z-index: 10; /* Ensure it's above Vanta.js */
+    }
+    .card.custom-card h2, .card.custom-card .h4, .card.custom-card .form-label {
+        color: #ffffff !important; /* Ensure titles and labels are white */
+    }
+    .card.custom-card .text-muted {
+        color: #b0b0b0 !important; /* Lighter grey for muted text */
+    }
+
+    #comments-list {
+        max-height: 600px; /* Adjust this value as needed for desired height */
+        overflow-y: auto; /* Enable vertical scrolling */
+        padding-right: 15px; /* Add some padding to prevent scrollbar from overlapping content */
+        margin-bottom: 20px; /* Space between comments and the form */
+        -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+    }
+
+    /* Style the scrollbar for better appearance (optional, Webkit browsers only) */
+    #comments-list::-webkit-scrollbar {
+        width: 8px;
+    }
+    #comments-list::-webkit-scrollbar-track {
+        background: rgba(0,0,0,0.2);
+        border-radius: 10px;
+    }
+    #comments-list::-webkit-scrollbar-thumb {
+        background: rgba(139, 233, 253, 0.5); /* Use a color matching your theme */
+        border-radius: 10px;
+    }
+    #comments-list::-webkit-scrollbar-thumb:hover {
+        background: rgba(139, 233, 253, 0.7);
+    }
+
+    #id_comment_content {
+        background-color: rgba(40, 40, 40, 0.9); /* Dark grey background for textarea */
+        border: 1px solid rgba(100, 100, 100, 0.7); /* Clearer border */
+        color: #ffffff; /* Text typed by user is pure white */
+        resize: vertical;
+        padding: 10px 15px; /* More padding */
+        border-radius: 5px;
+    }
+    #id_comment_content::placeholder {
+        color: rgba(255, 255, 255, 0.6); /* Lighter placeholder */
+    }
+    #id_comment_content:focus {
+        background-color: rgba(50, 50, 50, 0.95); /* Slightly lighter on focus */
+        border-color: #0099ff; /* Brighter blue focus border */
+        box-shadow: 0 0 0 0.25rem rgba(0, 153, 255, 0.3); /* Brighter shadow */
+        color: #ffffff;
+    }
+    .alert-danger {
+        color: #ffdddd; /* Very light red text */
+        background-color: rgba(220, 53, 69, 0.3); /* More transparent red background */
+        border-color: rgba(220, 53, 69, 0.5); /* Stronger red border */
+        padding: 10px 15px;
+        border-radius: 5px;
+    }
+    /* Ensure general labels and small text are highly visible for the form */
+    .form-label {
+        color: #ffffff !important; /* Explicitly white for all form labels */
+        font-weight: 500;
+    }
+    #char-count, #comment-limit-text {
+        color: #cccccc !important; /* Light grey for info text */
+    }
+    #char-count span, #remaining-comments {
+        font-weight: bold;
+        color: #8be9fd !important; /* Use the vibrant blue for numbers */
+    }
+    #char-count span[style*="red"], #remaining-comments[style*="red"] {
+        color: #ff6666 !important; /* Clearly visible red for warnings */
+    }
+    #post-comment-btn {
+        background-color: #007bff;
+        border-color: #007bff;
+        color: white;
+        padding: 8px 20px;
+        font-size: 1rem;
+        border-radius: 5px;
+        transition: background-color 0.2s, border-color 0.2s;
+    }
+    #post-comment-btn:hover:not(:disabled) {
+        background-color: #0056b3;
+        border-color: #0056b3;
+    }
+    #post-comment-btn:disabled {
+        background-color: #6c757d;
+        border-color: #6c757d;
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+    /* "No comments yet" message */
+    #no-comments-message {
+        color: #b0b0b0 !important;
+        font-style: italic;
+    }
+</style>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const commentForm = document.getElementById('comment-form');
+        const commentContent = document.getElementById('id_comment_content');
+        const charCountSpan = document.getElementById('current-chars');
+        const remainingCommentsSpan = document.getElementById('remaining-comments');
+        const postCommentBtn = document.getElementById('post-comment-btn');
+        const commentsList = document.getElementById('comments-list');
+        const noCommentsMessage = document.getElementById('no-comments-message');
+        const maxCommentLength = parseInt(commentContent.maxLength);
+        const maxCommentsPerUser = parseInt("{{ max_comments_per_event_per_user }}"); // From Django context
+        let currentUserComments = parseInt("{{ user_comments_count }}"); // From Django context
+
+        function updateCounts() {
+            const currentLength = commentContent.value.length;
+            charCountSpan.textContent = currentLength;
+
+            if (currentLength > maxCommentLength || currentLength < parseInt(commentContent.minLength)) {
+                charCountSpan.style.color = 'red';
+                postCommentBtn.disabled = true;
+            } else {
+                charCountSpan.style.color = ''; // Reset to default
+            }
+
+            // Disable button if comment limit reached, regardless of length
+            if (currentUserComments >= maxCommentsPerUser) {
+                commentContent.disabled = true;
+                postCommentBtn.disabled = true;
+                remainingCommentsSpan.textContent = '0';
+                remainingCommentsSpan.style.color = 'red';
+                document.getElementById('comment-limit-text').innerHTML = 
+                    `<span class="text-danger">You have reached the maximum of ${maxCommentsPerUser} comments.</span>`;
+            } else {
+                // Ensure this uses the calculated value from the view, if available, or client-side calculation
+                // For initial load, it comes from the view, after AJAX, client-side 'currentUserComments' is updated.
+                // So this line remains okay as 'currentUserComments' is updated after successful AJAX post.
+                remainingCommentsSpan.textContent = maxCommentsPerUser - currentUserComments;
+                remainingCommentsSpan.style.color = '';
+                if (currentLength > maxCommentLength || currentLength < parseInt(commentContent.minLength)) {
+                     postCommentBtn.disabled = true; // Still disabled if length is bad
+                } else {
+                     postCommentBtn.disabled = false; // Enable if length is good and not over comment limit
+                }
+            }
+        }
+
+        commentContent.addEventListener('input', updateCounts);
+        updateCounts(); // Initial call to set counts on page load
+
+        // Handle AJAX form submission
+        commentForm.addEventListener('submit', function(e) {
+            e.preventDefault(); // Prevent default form submission
+
+            const formData = new FormData(this);
+            const commentText = formData.get('comment_content');
+            const csrfToken = formData.get('csrfmiddlewaretoken');
+
+            if (commentText.length < parseInt(commentContent.minLength) || commentText.length > maxCommentLength) {
+                alert(`Comment must be between ${parseInt(commentContent.minLength)} and ${maxCommentLength} characters long.`);
+                return;
+            }
+            if (currentUserComments >= maxCommentsPerUser) {
+                alert(`You have reached the maximum of ${maxCommentsPerUser} comments for this event.`);
+                return;
+            }
+
+            fetch(this.action, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest', // Important for Django's is_ajax()
+                    'X-CSRFToken': csrfToken,
+                    'Content-Type': 'application/json' // Indicate JSON body
+                },
+                body: JSON.stringify({'content': commentText}) // Send as JSON
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (noCommentsMessage) {
+                        noCommentsMessage.remove(); // Remove "No comments yet" message
+                    }
+                    // Append the new comment HTML
+                    commentsList.insertAdjacentHTML('beforeend', data.comment_html);
+                    commentContent.value = ''; // Clear textarea
+                    currentUserComments = data.user_comments_count; // Update count
+                    updateCounts(); // Re-run counts for new comment limit
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Fetch error:', error);
+                alert('An error occurred while posting your comment.');
+            });
+        });
+    });
+</script>
+{% endblock %}

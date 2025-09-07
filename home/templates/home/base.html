@@ -50,7 +50,7 @@
             color: rgba(255, 255, 255, 0.8);
             background-color: rgba(0, 255, 255, 0.1);
             border: 1px solid rgba(0, 255, 255, 0.2);
-            border-radius: 50px; /* Pill-shaped buttons */
+            border-radius: 10px;
             padding: 0.5rem 1rem;
             margin: 0 0.25rem;
             transition: all 0.3s ease;
@@ -125,6 +125,9 @@
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'contest_list' %}">Contests</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.app_name == 'oa_events' %}active{% endif %}" href="{% url 'oa_events:oa_event_list' %}">OA/Interviews</a>
                         </li>
                         {% if perms.contest.add_contest %}
                             <li class="nav-item dropdown">

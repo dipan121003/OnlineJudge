@@ -1,4 +1,5 @@
 from django.db import models
+from oa_events.models import Company
 
 # Create your models here.
 class Problem(models.Model):
@@ -12,6 +13,9 @@ class Problem(models.Model):
     difficulty  = models.CharField(max_length=10, choices=DIFFICULTY_CHOICES)
     created_at  = models.DateTimeField(auto_now_add=True)
     memory_limit = models.IntegerField(default=256, help_text="Memory limit in MB")
+    company_tag = models.ForeignKey(Company, on_delete=models.SET_NULL,
+                                    null=True, blank=True,
+                                    help_text="Optional: Tag this problem with a company if it's an OA/Interview problem.")
     
     def __str__(self):
         return self.title 

@@ -30,12 +30,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.humanize',
     'home',  # Custom app for the home page
     'account',  # Custom app for user account
     'problems',  # Custom app for problems listing and management
     'submission',  # Custom app for handling submission
     'user_profile',  # Custom app for user profiles
     'contest',  # Custom app for contests
+    'oa_events',  # Custom app for organizing events
 ]
 
 MIDDLEWARE = [

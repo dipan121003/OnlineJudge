@@ -1,0 +1,98 @@
+{% extends 'home/base.html' %}
+{% load static %}
+
+{% block title %}OA/Interview Events – Kamand Prompt{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h1 class="display-5 fw-bold page-title mb-4">Company OA/Interview Events</h1>
+
+    {% if events %}
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            {% for event in events %}
+            <div class="col">
+                <a href="{% url 'oa_events:oa_event_detail' event.id %}" class="card-link">
+                    <div class="card h-100 shadow-sm custom-card">
+                        <div class="card-body d-flex flex-column">
+                            <div class="d-flex align-items-center mb-3">
+                                {% if event.company.logo %}
+                                    <img src="{{ event.company.logo.url }}" alt="{{ event.company.name }} Logo" class="me-3 company-logo-sm">
+                                {% else %}
+                                    <div class="me-3 company-logo-placeholder-sm">{{ event.company.name|first }}</div>
+                                {% endif %}
+                                <div>
+                                    <h5 class="card-title mb-0">{{ event.company.name }}</h5>
+                                    <p class="text-muted small mb-0">{{ event.title }}</p>
+                                </div>
+                            </div>
+                            <p class="card-text flex-grow-1">{{ event.description|truncatechars:100 }}</p>
+                            <div class="d-flex justify-content-between align-items-center mt-auto">
+                                <small class="text-muted"><i class="far fa-calendar-alt me-1"></i> {{ event.event_date|date:"F d, Y" }}</small>
+                                <span class="badge bg-primary">View Details</span>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info text-center" role="alert">
+            No OA/Interview events have been added yet. Stay tuned!
+        </div>
+    {% endif %}
+</div>
+
+<style>
+    /* Custom styles for OA Event cards */
+    .page-title {
+        color: white;
+        text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+    }
+
+    .card-link {
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .custom-card {
+        background-color: rgba(255, 255, 255, 0.08); /* Slightly visible background */
+        backdrop-filter: blur(10px); /* Frosted glass effect */
+        border: 1px solid rgba(255, 255, 255, 0.15); /* Subtle border */
+        color: #f8f9fa; /* Light text for dark background */
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
+
+    .custom-card:hover {
+        transform: translateY(-5px); /* Lift effect on hover */
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2); /* Stronger shadow on hover */
+    }
+
+    .custom-card .card-title {
+        color: white; /* Ensure title is white */
+        font-weight: bold;
+    }
+    
+    .company-logo-sm {
+        width: 40px;
+        height: 40px;
+        object-fit: contain;
+        border-radius: 5px;
+        background-color: rgba(255,255,255,0.1);
+        padding: 5px;
+    }
+
+    .company-logo-placeholder-sm {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #007bff; /* A default color */
+        color: white;
+        font-weight: bold;
+        font-size: 1.2rem;
+        border-radius: 5px;
+    }
+</style>
+{% endblock %}

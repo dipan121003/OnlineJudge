@@ -27,6 +27,7 @@ urlpatterns = [
     path('submit/', include('submission.urls')),  # Include URLs from the submission app
     path('profile/', include('user_profile.urls')),  # Include URLs from the user_profile app
     path('contest/', include('contest.urls')),  # Include URLs from the contest app
+    path('oa-interviews/', include('oa_events.urls')),  # Include URLs from the oa_events app
 ]
 
 if settings.DEBUG:
